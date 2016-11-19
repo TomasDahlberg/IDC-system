@@ -1,0 +1,141 @@
+
+
+$ setstat
+SaveIdx     @ 3ffc0 = 1
+ReadIdx PC0 @ 3ffc2 = 0 (enable)
+ReadIdx PC1 @ 3ffc4 = 0 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+3
+Show next sample ?: (n) 
+Stat 'kalle':
+  0: buff 17, intervall 60, duc 0, var level
+  1: - empty -
+  2: - empty -
+  3: - empty -
+  4: - empty -
+  5: - empty -
+  6: - empty -
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 1 empty
+Stat 2 empty
+Stat 3 empty
+Stat 4 empty
+Stat 5 empty
+Stat 6 empty
+Stat 7 empty
+SaveIdx     @ 3ffc0 = 1
+ReadIdx PC0 @ 3ffc2 = 0 (enable)
+ReadIdx PC1 @ 3ffc4 = 0 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+0
+
+$ 
+
+$ 
+
+$ setstat
+SaveIdx     @ 3ffc0 = 1
+ReadIdx PC0 @ 3ffc2 = 0 (enable)
+ReadIdx PC1 @ 3ffc4 = 0 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+3
+Show next sample ?: (n) y
+Stat 'kalle':
+  0: buff 17, intervall 60, duc 0, var level
+  Next sample: Tue Sep  7 20:15:51 1993
+  1: - empty -
+  2: - empty -
+  3: - empty -
+  4: - empty -
+  5: - empty -
+  6: - empty -
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 1 empty
+Stat 2 empty
+Stat 3 empty
+Stat 4 empty
+Stat 5 empty
+Stat 6 empty
+Stat 7 empty
+SaveIdx     @ 3ffc0 = 1
+ReadIdx PC0 @ 3ffc2 = 0 (enable)
+ReadIdx PC1 @ 3ffc4 = 0 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+0
+
+$ b
+shell: can't execute "b"  - Error #000:215
+
+$ 

@@ -1,0 +1,251 @@
+ psect kurvab_c,0,0,0,0,0
+ nam kurvab_c
+* /* kurvab.c  1991-08-03 TD,  version 1.1 */
+* /*
+* 
+* /*
+* #define REQUEST_911218 
+* 
+* 
+* /*	Kurvfunktion MS 910603  */
+* 
+* #include <stdio.h>
+* /* type lengths regardless of compiler in use:
+* 
+* #ifndef INCLUDE_FILE_STDIO_H
+* #define INCLUDE_FILE_STDIO_H
+* 
+* typedef short WORD;     /* always 16 bits */
+* 
+* #ifdef OSK
+* #   define BUFSIZ 512
+* #   define _NFILE 32
+* #else
+* #   ifdef OS9
+* #       define BUFSIZ 256
+* #       define _NFILE 16
+* #   endif
+* #endif
+* 
+* typedef struct _iobuf {
+*     char *_ptr,		/* buffer pointer */
+*          *_base,	/* buffer base address */
+*          *_end;		/* buffer end address */
+*     WORD _flag;		/* file status */
+*     WORD _fd;		/* file path number */
+*     char _save;		/* for 'ungetc' when unbuffered */
+*     WORD _bufsiz;	/* size of data buffer */
+* 	int (*_ifunc)();/* function to use for input */
+* 	int (*_ofunc)();/* function to use for output */
+* } FILE;
+* 
+* extern FILE _iob[_NFILE];
+* 
+* /*	the following are fake pointer variable defintions  */
+* #define stdin	(&_iob[0])
+* #define stdout	(&_iob[1])
+* #define stderr	(&_iob[2])
+* 
+* #define _READ		1
+* #define _WRITE		2
+* #define _UNBUF		4
+* #define _BIGBUF		8
+* #define _EOF		0x10
+* #define _ERR		0x20
+* #define _SCF		0x40
+* #define _RBF		0x80
+* #define _DEVMASK	0xc0
+* #define _WRITTEN	0x0100		/*	buffer written in update mode  */
+* #define _MYBUF		0x0200		/*	system allocated buffer  */
+* #define _INIT		0x8000		/*	_iob initialized  */
+* 
+* #define EOF (-1)
+* #define EOL 13
+* #define NULL 0
+* 
+* #ifdef OSK
+* #define PMODE READ|WRITE    /* r/w for owner */
+* #else
+* #define PMODE  0xb          /* r/w for owner, r for others */
+* #endif
+* 
+* #define fgetc           getc
+* #define putchar(c)      putc(c,stdout)
+* #define getchar()       getc(stdin)
+* #define ferror(p)       ((p)->_flag&_ERR)
+* #define feof(p)         ((p)->_flag&_EOF)
+* #define clearerr(p)     ((p)->_flag&=~_ERR)
+* #define cleareof(p)     ((p)->_flag&=~_EOF)
+* #define fileno(p)       ((p)->_fd)
+* 
+* extern FILE *fopen(), *fdopen(), *freopen();
+* extern char *fgets(), *gets();
+* extern long ftell();
+* 
+* #endif
+* 
+* double kurva(regTemp, antPkt, x, y)
+* double regTemp;
+* int antPkt;
+* double x[], y[];
+* {
+ ttl kurva
+kurva:  link a5,#0
+ movem.l #_1!3,-(sp)
+ move.l #_3,d0 :6
+ bsr _stkcheck
+*   int i;
+* 
+* #ifndef REQUEST_911218 
+*   if (regTemp <= x[0])
+*     return y[0];
+* #endif
+*   for (i = 1; i < antPkt; i++)  
+ subq.l #4,sp :2
+ moveq.l #1,d0 :2
+ move.l d0,(sp) :2
+ bra _7
+*     if (regTemp <= x[i])
+_5
+*       return ( y[i] - y[i-1] ) / ( x[i] - x[i-1] ) * ( regTemp - x[i-1] ) + y[i-1];
+ move.l (sp),d0 :2
+ lsl.l #3,d0 :2
+ movea.l 8+_2(sp),a0
+ movem.l 4(sp),d2/d3 :6
+ movem.l 0(a0,d0.l),d0/d1 :6
+ bsr _T$DCmp
+ blt _10
+_9
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 8+_2(sp),a0
+ move.l (sp),d1 :2
+ lsl.l #3,d1 :2
+ movea.l 8+_2(sp),a1
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 0(a1,d1.l),d0/d1 :6
+ bsr _T$DSub
+ move.l d1,d5 :2
+ move.l d0,d4 :2
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 12+_2(sp),a0
+ move.l (sp),d1 :2
+ lsl.l #3,d1 :2
+ movea.l 12+_2(sp),a1
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 0(a1,d1.l),d0/d1 :6
+ bsr _T$DSub
+ move.l d5,d3 :2
+ move.l d4,d2 :2
+ bsr _T$DDiv
+ move.l d1,d5 :2
+ move.l d0,d4 :2
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 8+_2(sp),a0
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 4(sp),d0/d1 :6
+ bsr _T$DSub
+ move.l d5,d3 :2
+ move.l d4,d2 :2
+ bsr _T$DMul
+ move.l (sp),d2 :2
+ subq.l #1,d2 :2
+ lsl.l #3,d2 :2
+ movea.l 12+_2(sp),a0
+ movem.l 0(a0,d2.l),d2/d3 :6
+ bsr _T$DAdd
+ addq.l #4,sp :2
+ bra _4
+* #ifdef REQUEST_911218
+*   i--;
+_10
+_8
+ addq.l #1,(sp) :2
+_7
+ move.l (sp),d0 :2
+ cmp.l 4+_2(sp),d0
+ blt _5
+_6
+ subq.l #1,(sp) :2
+*   return ( y[i] - y[i-1] ) / ( x[i] - x[i-1] ) * ( regTemp - x[i-1] ) + y[i-1];
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 8+_2(sp),a0
+ move.l (sp),d1 :2
+ lsl.l #3,d1 :2
+ movea.l 8+_2(sp),a1
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 0(a1,d1.l),d0/d1 :6
+ bsr _T$DSub
+ move.l d1,d5 :2
+ move.l d0,d4 :2
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 12+_2(sp),a0
+ move.l (sp),d1 :2
+ lsl.l #3,d1 :2
+ movea.l 12+_2(sp),a1
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 0(a1,d1.l),d0/d1 :6
+ bsr _T$DSub
+ move.l d5,d3 :2
+ move.l d4,d2 :2
+ bsr _T$DDiv
+ move.l d1,d5 :2
+ move.l d0,d4 :2
+ move.l (sp),d0 :2
+ subq.l #1,d0 :2
+ lsl.l #3,d0 :2
+ movea.l 8+_2(sp),a0
+ movem.l 0(a0,d0.l),d2/d3 :6
+ movem.l 4(sp),d0/d1 :6
+ bsr _T$DSub
+ move.l d5,d3 :2
+ move.l d4,d2 :2
+ bsr _T$DMul
+ move.l (sp),d2 :2
+ subq.l #1,d2 :2
+ lsl.l #3,d2 :2
+ movea.l 12+_2(sp),a0
+ movem.l 0(a0,d2.l),d2/d3 :6
+ bsr _T$DAdd
+ addq.l #4,sp :2
+ bra _4
+* #else
+*   return y[antPkt-1];
+* #endif
+* }
+ nop :2
+_4
+ movem.l -24(a5),#_1
+ unlk a5
+ rts :2
+_3 equ 0xffffffbc :0
+_1 equ 0x0000033c :0
+_2 equ 0x00000028 :0
+*     
+* #ifdef TEST
+* void main()
+* { 	
+*  float k[] = { -20, -10, -5, 0, 5, 10, 20 };
+*  float g[] = {  70,  60, 50, 40,30,20, 10 };
+*  float kalle;
+*  int i;
+* 
+*  system("cls");
+* 
+*  for (i = -20; i < 20; i++)
+*  {
+*    kalle = kurva (i, 7, k, g);
+*    printf(" %1.1f",kalle);
+*  }
+* }
+* #endif
+ ends

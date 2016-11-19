@@ -1,0 +1,66 @@
+ psect debugSkrift_c,0,0,0,0,0
+ nam debugSkrift_c
+* static char *debugPtr = 0x3ffb0;
+ vsect
+debugPtr  dc.l 262064
+ ends
+* static char *debugRelease = 0x3ffb1;
+ vsect
+debugRelease  dc.l 262065
+ ends
+* 
+* /*
+* debugSkrift(a,b)
+* long int a,b;
+* {
+ ttl debugSkr
+debugSkrift:  link a5,#0
+ movem.l #_1!3,-(sp)
+ move.l #_3,d0 :6
+ bsr _stkcheck
+*   if (*debugPtr) {
+ movea.l debugPtr(a6),a0
+ tst.b (a0) :2
+ beq _6
+_5
+*     printf("Vec = %d, PC = %x\n", a & 0xfff, b);
+ move.l 4(sp),-(sp)
+ move.l #4095,d0 :6
+ and.l 4(sp),d0
+ move.l d0,d1 :2
+ lea _7(pc),a0
+ move.l a0,d0 :2
+ bsr printf
+ addq.l #4,sp :2
+*     printf("D0=%x, D1=%x\n", &b+17, &b+18);
+ pea 76(sp)
+ lea 76(sp),a0
+ move.l a0,d1 :2
+ lea _8(pc),a0
+ move.l a0,d0 :2
+ bsr printf
+ addq.l #4,sp :2
+*     
+*     *debugRelease = 0;
+ movea.l debugRelease(a6),a0
+ clr.b (a0) :2
+*     while (*debugRelease == 0)
+*       ;
+_10
+ movea.l debugRelease(a6),a0
+ tst.b (a0) :2
+ beq _10
+*   }
+_9
+* }
+_6
+_4
+ movem.l -4(a5),#_1
+ unlk a5
+ rts :2
+_3 equ 0xffffffb8 :0
+_1 equ 0x00000100 :0
+_2 equ 0x00000014 :0
+_7 dc.b "Vec = %d, PC = %x",$d,$0
+_8 dc.b "D0=%x, D1=%x",$d,$0
+ ends

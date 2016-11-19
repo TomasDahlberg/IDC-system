@@ -1,0 +1,1558 @@
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     1
+ hw82c684.a
+ - 
+00001 *
+00002 * File:           sc82c684.a
+00003 * Last modified:  93-11-17
+00004 *
+00005  0000000f Edition    equ      15             current Edition number
+00006  00000001 Revision   equ      1              current revision
+00007 
+00008 *
+00009 * Acia-device driver for XR82C684 quart devices
+00010 * This driver was written completely from scratch
+00011 * for the DT/08 system since the portpak supplied
+00012 * drivers for MC68681 contained several severe
+00013 * bugs and could not be used at all.
+00014 *
+00015 * This driver uses a shared memory area for shadow registers
+00016 * in the OEM-global area, this means that it could
+00017 * collide with some other manufacturers use of those
+00018 * bytes. The register number is programmable in the first
+00019 * byte of the device descriptors DevCon area. It should
+00020 * be selected to a value different from what other drivers
+00021 * use.
+00022 *
+00023 * This driver improves upon the normal os9 practice of
+00024 * masking device interrupts while it is updating buffer
+00025 * values, flags etc. This removes about 100 clock cycles
+00026 * of overhead from each interrupt handled by this driver!!!
+00027 * This is quite an improvement over the Microware supplied
+00028 * drivers who program the SR-registers interrupt level bits
+00029 * each time a shared register is to be updated.
+00030 *
+00031 * This driver does not suffer from deadlocks or overwriting
+00032 * previous information since all access to shared values are
+00033 * made by single instructions like clr, addq etc.
+00034 *
+00035 *  Ed.           History:
+00036 * --------------------------------------------------------
+00037 *  1. 90-10-11   first polled version                    C.O.
+00038 *  2. 90-10-14   first interrupt driven version          C.O.
+00039 *                support for 2 of the 4 subdevices
+00040 *  3. 90-10-15   after a LONG hack the first production  C.O.
+00041 *                talked to us and was delivered in the
+00042 *                morning. Support for all 4 subdevices
+00043 *                and the ticker device. The clock module
+00044 *                is now trivial since its interrupt
+00045 *                handler resides in this driver.
+00046 *  4. 90-10-17   added network support for COLNET        C.O.
+00047 *                also made it possible to use
+00048 *                chips with more than 4 subdevices.
+00049 *                address layout can now be on byte or
+00050 *                word boundaries.
+00051 *  5. 90-10-20   added SS_SSig and SS_Relea facility     C.O.
+00052 *                to send signals to processes when
+00053 *                data becomes available on the port.
+00054 *  6. 90-10-20   added mode control for setting of baud  C.O.
+00055 *                and parity with TMODE, the multidrop
+00056 *                network can now be selected through
+00057 *                the parity code on any port.
+00058 *  7. 90-10-25   added shared shadow register support,   C.O.
+00059 *                the method used is much faster than
+00060 *                Microwares and does not need to disable
+00061 *                the interrupts while updating the shared
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     2
+ hw82c684.a
+ - 
+00062 *                registers. It still uses the same D_Start
+00063 *                area reserved for it in the kernels dataarea.
+00064 *                The byte used is given in the first byte
+00065 *                in the DevCon area of the device descriptor.
+00066 *                also changed the F$IRQ to setup different
+00067 *                entry points for the "A" and "B" sides
+00068 *                of the device, this saves a few clockcycles
+00069 *                on every input interrupt.
+00070 *  8. 90-10-25   added output buffer flow-control.       C.O.
+00071 *                the versions 1-7 have had an easy time only
+00072 *                supporting one byte output at a time. This
+00073 *                edition is fully interrupt driven for
+00074 *                output transfers as well.
+00075 *  9. 90-11-11   added tx-interrupt facility, driver is  C.O.
+00076 *                now fully interrupt driven. Still no
+00077 *                need to mask interrupts during change
+00078 *                of states, OutHalt and InHalt are now
+00079 *                properly handled at 10% and 90% buffer
+00080 *                levels
+00081 *  10. 90-11-12  Fixed problem with SS_Opt for other     C.O.
+00082 *                ports than /term, updated descriptors
+00083 *                for t1,t2,t3. Baudrate can be different
+00084 *                for all ports
+00085 *  11. 90-11-18  Fixed problem with SS_Opt for setting   C.O.
+00086 *                other parity modes than NO PARITY.
+00087 *                Now supprots ODD, EVEN, NONE and MULTI.
+00088 *                Word length can be 5, 6, 7 or 8 bits and
+00089 *                stopbits can be 1, 1.5 or 2. All can be
+00090 *                set by tmode.
+00091 *  12. 91-01-01  Cleaned up the code and added comments, C.O.
+00092 *                this is no longer a test version. A
+00093 *                module load facility has also been
+00094 *                included.
+00095 *  13. 91-01-07  Fixed buffer 90% full calculation error. D.A.
+00096 *                It had gone undiscovered for a while that
+00097 *                it was set to 110%.
+00098 *  14. 91-01-07  Rewrote flowcontrol subroutines to use  C.O.
+00099 *                an action flag instead of mixing bits in
+00100 *                the ascii code. Also set the flag testing
+00101 *                sequence correctly so that interrupts doesnt
+00102 *                disturb things. Changed the buffer size
+00103 *                to 1K.
+00104 *  15. 93-11-17  Added no-check control for parity errors in IrqInA
+00105 *		 No-check is enabled with bit 7 in parity byte
+00106 *		 All it does is to skip parity errors from uart
+00107 *		 
+00108  00000e01 Typ_Lang   set      (Drivr<<8)+Objct 
+00109  0000a001 Att_Revs   set      ((ReEnt+SupStat)<<8)+Revision 
+00110                      psect    AciaDriv,Typ_Lang,Att_Revs,Edition,0,AciaEnt 
+00111 
+00112 *
+00113 * Define buffer sizes
+00114 *
+00115  00000400 InSize     set      1024           input buffer size
+00116  00000100 OutSize    set      256            output buffer size
+00117  00000020 FrmSize    set      32             default frame size
+00118 
+00119 *
+00120 * Define flowcontrol limits
+00121 *
+00122  00000066 InLvl10    set      InSize/10      input flowcontrol 10% limit
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     3
+ hw82c684.a
+ - 
+00123  00000399 InLvl90    set      (InSize*9)/10  input flowcontrol 90% limit
+00124  00000019 OutLvl10   set      OutSize/10     output flowcontrol 10% limit
+00125 
+00126 *
+00127 * Device static storage
+00128 *
+00129                      vsect                   
+00130  00000000 Shadow     ds.l     1              pointer to shadow register
+00131  00000004 InRead     ds.l     1              input-buffer read pointer
+00132  00000008 InWrite    ds.l     1              input-buffer write pointer
+00133  0000000c InEnd      ds.l     1              input-buffer end pointer
+00134  00000010 OutRead    ds.l     1              output-buffer read pointer
+00135  00000014 OutWrite   ds.l     1              output-buffer write pointer
+00136  00000018 OutEnd     ds.l     1              output-buffer end pointer
+00137  0000001c ModLoad    ds.l     1              module load pointer
+00138  00000020 InCount    ds.w     1              input-buffer level
+00139  00000022 OutCount   ds.w     1              output-buffer level
+00140  00000024 IRQMask    ds.w     1              device irq level mask
+00141  00000026 SigPrc     ds.w     3              values for SS_SSig (pid, signal, path)
+00142  0000002c Station    ds.w     1              netnode station id code
+00143  0000002e Parity     ds.b     1              parity code value
+00144  0000002f BaudRate   ds.b     1              baudrate code value
+00145  00000030 IrqFlags   ds.b     1              enabled irqs for this device
+00146  00000031 Action     ds.b     1              flag for flowcontrol (0= inactive)
+00147  00000032 InHalt     ds.b     1              input halted state
+00148  00000033 OutHalt    ds.b     1              output halted state
+00149  00000034 InBuf      ds.b     InSize         input data buffer
+00150  00000434 OutBuf     ds.b     OutSize        output data buffer
+00151  00000534 RTSmode    ds.b     1              RxRTS handshake mode
+00152  00000535 RTSstate   ds.b     1              RxRTS current state
+00153  00000536 TXmode     ds.b     1              Tx handshake mode
+00154  00000000            ends                    
+00155 
+00157  00000080 RxDefault  equ      RxRTS          RxRTS control enabled
+00158  00000010 TxDefault  equ      TxCTS          TxCTS control enabled
+00163 
+00164 *
+00165 * Definitions
+00166 *
+00167 
+00168 * 82C684 register offsets (from device BASE address)
+00169 
+00170  00000004 MPSACR     set      $04            68681 auxilliary control register
+00171  00000005 MPSImr     set      $05            68681 Interrupt mask/status register (from device BASE)
+00172  00000006 MPSCTUR    set      $06            68681 counter/timer msb register
+00173  00000007 MPSCTLR    set      $07            68681 counter/timer lsb register
+00174 
+00175  0000000d MPSOpcr    set      $0d            output port configuration register
+00176  0000000d MPSIp      set      $0d            input port
+00177  0000000e MPSOprSet  set      $0e            output port register (set command)
+00178  0000000f MPSOprRes  set      $0f            output port register (reset command)
+00179 
+00180 * 82C684 register offset (for each SIDE of the device)
+00181 
+00182  00000003 MPSData    equ      3              data register
+00183  00000002 MPSCntl    equ      2              control register
+00184  00000000 MPSMode    equ      0              mode register
+00185  00000001 MPSBdSt    equ      1              baudrate/status register
+00186 
+00187  00000003 ABbit      equ      3              device "side" select bit
+00188  00000008 MPSOffs    equ      (MPSBdSt-MPSMode)*8 subdevice addressing range
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     4
+ hw82c684.a
+ - 
+00189  00000004 MPSSubs    equ      4              nr of subdevices in the chip
+00190  00000012 MPSXtal    equ      MPSOffs*2+MPSCntl reg for xtal 1:1 command
+00191  fffffffd MPSImrB    equ      MPSImr-MPSOffs offset to Imr from B-side
+00192  00000005 Ench       equ      $5             enable for tx and rx
+00193 
+00194 *
+00195 * Interrupt flag bits
+00196 *
+00197  00000000 TxBitA     equ      0              bitnr in Imr for tx-irq A
+00198  00000001 RxBitA     equ      1              bitnr in Imr for rx-irq A
+00199  00000003 TmBitA     equ      3              bitnr in Imr for timer
+00200  00000004 TxBitB     equ      4              bitnr in Imr for tx-irq B
+00201  00000005 RxBitB     equ      5              bitnr in Imr for rx-irq B
+00202 
+00203 * MPSMode Registers
+00204 
+00205  00000080 RxRTS      equ      %10000000      MR1 - rx rts flow control enable
+00206  00000020 TxRTS      equ      %00100000      MR2 - tx rts flow control enable
+00207  00000010 TxCTS      equ      %00010000      MR2 - tx cts flow control enable
+00208 
+00209                      use      defsfile.2     
+00001 
+00002                      use      oskdefs.d      
+00001                      opt      -l             
+00003                      use      systype.d      
+00001 * System Definitions for Motorola VME110 system
+00002                      opt      -l             
+00345 
+00004 * use macro.d
+00005 
+00006 
+00210                      use      ..\macros\dt08.m 
+00001 * FILE:      DT08.M
+00002 * DESCRIPTION:
+00003 *   macros for accessing DT/08 hardware
+00004 *   lcd-display unit, rtc etc.
+00005 *
+00006 *   lcdgo   should be used to initialize
+00007 *   lcd x   will try to display the ascii byte value x
+00008 *
+00009 * DATE:  90-11-25/co
+00010 *        91-04-03/da  WRITELED added
+00011 *
+00012           lcdtest    macro                   
+00013                      move.w   #3000,d0       
+00014           lg\@       btst     #7,$00308000   
+00015                      beq.s    lq\@           
+00016                      subq.w   #1,d0          
+00017                      bne.s    lg\@           
+00018           lq\@       tst.w    d0             
+00019                      endm                    
+00020           lcdinit    macro                   
+00021           lc\@       btst     #7,$00308000   
+00022                      bne      lc\@           
+00023                      move.b   #\1,$00308000  
+00024                      endm                    
+00025           lcd        macro                   
+00026           lt\@       btst     #7,$00308000   
+00027                      bne      lt\@           
+00028                      move.b   #\1,$00308001  
+00029                      endm                    
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     5
+ hw82c684.a
+ - 
+00030           lcdput     macro                   
+00031           lt\@       btst     #7,$00308000   
+00032                      bne      lt\@           
+00033                      move.b   d0,$00308001   
+00034                      endm                    
+00035           lcdgo      macro                   
+00036                      lcdinit  $01            
+00037                      lcdinit  $0D            
+00038                      lcdinit  $38            
+00039                      lcdinit  $06            
+00040                      endm                    
+00041 
+00042 *
+00043 * READRTC
+00044 *   read from rtc device
+00045 *
+00046           READRTC    macro                   
+00047                      move.b   $310000,\1     
+00048                      endm                    
+00049 
+00050 *
+00051 * WRITERTC
+00052 *   write to rtc device
+00053 *
+00054           WRITERTC   macro                   
+00055                      move.b   \1,$310000     
+00056                      endm                    
+00057 
+00058 *
+00059           WRITELED   macro                   
+00060                      move.b   \1,$308002     
+00061                      endm                    
+00211                      use      ..\macros\os9svc.m 
+00001 
+00002 ********************
+00003 * OS9svc macro 
+00004 *   Direct call to OS9 service routine.
+00005 * one argument: system call code, (a6)=system global ptr
+00006 *
+00007 * WARNING:  using this call generally requires intimate knowledge
+00008 *           of how the kernel works.  It is generally useful only
+00009 *           for calls that do not return parameters (e.g. OS9 F$Send,
+00010 *           OS9 F$Sleep[0]).
+00011 
+00012           OS9svc     macro                   
+00013                      ifne     \#-1  must have exactly one argument 
+00014                      fail     wrong number of arguments to OS9svc macro 
+00015                      endc                    
+00016                      move.l   a3,-(a7) save reg 
+00017                      movea.l  D_SysDis(a6),a3 get system dispatch tbl ptr 
+00018                      pea      OS9svc\@(pc) set return address 
+00019                      move.l   \1+\1+\1+\1(a3),-(a7) set OS9 service routine ptr 
+00020                      movea.l  \1+\1+\1+\1+256*4(a3),a3 get service routine data ptr 
+00021                      rts      execute service routine 
+00022           OS9svc\@   movea.l  (a7)+,a3 restore reg 
+00023                      endm                    
+00024 
+00212 
+00213 *
+00214 * DELAY: macro to create delay on chip accessing
+00215 *
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     6
+ hw82c684.a
+ - 
+00216           DELAY      macro                   
+00217                      exg      d0,d1 switch regs 
+00218                      exg      d0,d1 ..and restore 
+00219                      endm                    
+00220 
+00221 *
+00222 * Device entry table called by os9
+00223 *
+00224 0000 000e AciaEnt    dc.w     Init           
+00225 0002 02c2            dc.w     Read           
+00226 0004 024e            dc.w     Write          
+00227 0006 0362            dc.w     GetStat        
+00228 0008 0394            dc.w     PutStat        
+00229 000a 0288            dc.w     TrmNat         
+00230 000c 0000            dc.w     0              exception handler (0=none)
+00231 
+00232 *
+00233 * Init
+00234 *   initialize device static storage and
+00235 *   place the device in the os9 interrupt system
+00236 *
+00237 * passed: (a1) = pointer to device descriptor module
+00238 *         (a2) = pointer to device static storage
+00239 *         (a4) = process descriptor
+00240 *         (a5) = callers register stack
+00241 *         (a6) = system globals
+00242 *
+00243           Init                               
+00244 000e=266a            movea.l  V_PORT(a2),a3  get port address
+           0000
+00245 0012 200b            move.l   a3,d0          
+00246 0014 0200            andi.b   #256-MPSOffs*MPSSubs,d0 
+           00e0
+00247 0018 2040            movea.l  d0,a0          
+00248 001a 117c            move.b   #$C0,MPSXtal(a0) set xtal 1:1 clock
+           00c00012
+00249 
+00250           Init00                             
+00251 0020 4280            clr.l    d0             clear d0
+00252 0022=41ee            lea.l    D_Start(a6),a0 get ptr to OEM-globals
+           0000
+00253 0026 2548            move.l   a0,Shadow(a2)  save default pointer
+           0000
+00254 002a=3029            move.w   M$DevCon(a1),d0 get offset to shadow regs
+           0000
+00255 002e 670c            beq.s    Init01         not defined?
+00256 0030 3031            move.w   (a1,d0.w),d0   get the offset value
+           0000
+00257 0034 2208            move.l   a0,d1          get base ptr
+00258 0036 d280            add.l    d0,d1          add register nr to ptr
+00259 0038 2541            move.l   d1,Shadow(a2)  save updated pointer
+           0000
+00260           Init01                             
+00261 003c 157c            move.b   #0,IrqFlags(a2) set enabled irqs for this device
+           00000030
+00262 0042 b7fc            cmpa.l   #ClkPort,a3    is clock/console device?
+           00340000
+00263 0048 6608            bne.s    Init02         no...
+00264 004a 206a            movea.l  Shadow(a2),a0  get shadow reg ptr
+           0000
+00265 004e 08d0            bset     #TmBitA,(a0)   set timer enable
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     7
+ hw82c684.a
+ - 
+           0003
+00266 0052 426a Init02     clr.w    InCount(a2)    set input-buffer empty
+           0020
+00267 0056 426a            clr.w    OutCount(a2)   set output-buffer empty
+           0022
+00268 005a 422a            clr.b    InHalt(a2)     set input halted state
+           0032
+00269 005e 422a            clr.b    OutHalt(a2)    set output halted state
+           0033
+00270 0062 422a            clr.b    Action(a2)     clear flag
+           0031
+00271 0066 41ea            lea      InBuf(a2),a0   get pointer to input-buffer
+           0034
+00272 006a 2548            move.l   a0,InRead(a2)  set initial read-pointer
+           0004
+00273 006e 2548            move.l   a0,InWrite(a2) set initial write-pointer
+           0008
+00274 0072 41e8            lea      InSize(a0),a0  get pointer to end
+           0400
+00275 0076 2548            move.l   a0,InEnd(a2)   set end pointer
+           000c
+00276 007a 41ea            lea      OutBuf(a2),a0  get pointer to output-buffer
+           0434
+00277 007e 2548            move.l   a0,OutRead(a2) set initial read-pointer
+           0010
+00278 0082 2548            move.l   a0,OutWrite(a2) set initial write-pointer
+           0014
+00279 0086 41e8            lea      OutSize(a0),a0 get pointer to end
+           0100
+00280 008a 2548            move.l   a0,OutEnd(a2)  set end pointer
+           0018
+00281 
+00282           Init1                              
+00283 008e 6100            bsr      NetId          set network address
+           0106
+00284 
+00285 0092 157c            move.b   #RxDefault,RTSmode(a2) set RxRTS h/w control
+           00800534
+00286 0098 6704            beq.s    Init11         .. bra i no RTS to assert
+00287 009a 50ea            st.b     RTSstate(a2)   signal RTS to be asserted
+           0535
+00288           Init11                             
+00289 009e 157c            move.b   #TxDefault,TXmode(a2) set TxCTS h/w control
+           00100536
+00290 
+00291 00a4=1029            move.b   PD_BAU-PD_OPT+M$DTyp(a1),d0 get baudrate code
+           0000
+00292 00a8 6100            bsr      BaudCalc       set baud rate
+           0124
+00293 00ac 655c            bcs.s    InitExit       
+00294 00ae=1029            move.b   PD_PAR-PD_OPT+M$DTyp(a1),d0 get parity code
+           0000
+00295 00b2 6170            bsr.s    BitPar0        set comms mode
+00296 00b4 6554            bcs.s    InitExit       
+00297 
+00298 00b6 177c Init15     move.b   #Ench,MPSCntl(a3) enable xmit & rec
+           00050002
+00299 00bc=266a            movea.l  V_PORT(a2),a3  get device port address (subdevice)
+           0000
+00300 00c0=1029            move.b   M$Vector(a1),d0 get device irq vector nr
+           0000
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     8
+ hw82c684.a
+ - 
+00301 00c4=1229            move.b   M$Prior(a1),d1 get priority
+           0000
+00302 00c8 41fa            lea      IrqRutA(pc),a0 get A-side handler
+           04e4
+00303 00cc=082a            btst     #ABbit,V_PORT+3(a2) is A-side?
+           00030003
+00304 00d2 6704            beq.s    Init16         yes..
+00305 00d4 41fa            lea      IrqRutB(pc),a0 no.. is B-side
+           04bc
+00306 
+00307           Init16                             
+00308 00d8=4e40            os9      F$IRQ          install in irqs table
+           0000
+00309 00dc 652c            bcs.s    InitExit       os9 reports an error?
+00310 
+00311 00de=1029 Init2      move.b   M$IRQLvl(a1),d0 get device hardware irq level
+           0000
+00312 00e2 e140            asl.w    #8,d0          shift into mask bits
+00313 00e4=08c0            bset     #SupvrBit+8,d0 set supervisor state bits
+           0008
+00314 00e8 3540            move.w   d0,IRQMask(a2) save irq mask for future use
+           0024
+00315 
+00316           Init20                             
+00317 00ec=266a            movea.l  V_PORT(a2),a3  get ptr to port
+           0000
+00318 00f0 6100            bsr      RxEnable       go and enable rx-interrupts
+           0388
+00319 00f4 6100            bsr      TxDisable      and disable tx-interrupts
+           0414
+00320 00f8 206a Init30     movea.l  Shadow(a2),a0  get shadow reg ptr
+           0000
+00321 00fc 200b            move.l   a3,d0          get port addr
+00322 00fe 0200            andi.b   #256-MPSOffs*2,d0 remove side bits
+           00f0
+00323 0102 2640            movea.l  d0,a3          set ptr to A-side of device
+00324 0104 1750            move.b   (a0),MPSImr(a3) set interrupt masks
+           0005
+00325 
+00326 0108 7200 Init99     moveq    #0,d1          no errors
+00327 010a 4e75 InitExit   rts                     
+00328 
+00329           ParDefs                            
+00330 010c   10            dc.b     $10            no parity
+00331 010d   04            dc.b     $04            odd parity
+00332 010e   10            dc.b     $10            no parity, no special protocol
+00333 010f   00            dc.b     $00            even parity
+00334 
+00335           BitsDefs                           
+00336 0110   03            dc.b     $03            8bits
+00337 0111   02            dc.b     $02            7bits
+00338 0112   01            dc.b     $01            6bits
+00339 0113   00            dc.b     $00            5bits
+00340 
+00341           StopDefs                           
+00342 0114   07            dc.b     $07            1 stopbit
+00343 0115   07            dc.b     $07            1.5 stopbit for 5bit data
+00344 0116   0f            dc.b     $0F            2 stop bits
+00345 0117   ff            dc.b     $FF            illegal
+00346 
+00347 *
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page     9
+ hw82c684.a
+ - 
+00348 * BitPar
+00349 *   Setup the bits/parity/stopbits
+00350 *   mode for this device
+00351 *
+00352 * passed: (d0.b) = os9 parity code word
+00353 *
+00354 0118 610a BitPar     bsr.s    BitPar0        set parity and other stuff
+00355 011a 6506            bcs.s    BitPar9        error?
+00356 011c 177c            move.b   #Ench,MPSCntl(a3) enable xmit & rec
+           00050002
+00357 0122 4e75 BitPar9    rts                     
+00358 
+00359 *
+00360 * BitPar0
+00361 *   Setup the bits/parity/stopbits without
+00362 *   enabling the device
+00363 *
+00364 0124=266a BitPar0    movea.l  V_PORT(a2),a3  get device port
+           0000
+00365 0128 7400            moveq.l  #0,d2          sweep d2
+00366 012a 0240            andi.w   #$00FF,d0      clear msbs
+           00ff
+00367 012e 3200            move.w   d0,d1          copy parity value
+00368 0130 0241            andi.w   #3,d1          isolate parity mode
+           0003
+00369 0134 41fa            lea.l    ParDefs(pc),a0 point to parity mode bits
+           ffd6
+00370 0138 1430            move.b   (a0,d1.w),d2   get parity code
+           1000
+00371 013c 3200            move.w   d0,d1          get data bit size
+00372 013e e449            lsr.w    #2,d1          make index value
+00373 0140 0241            andi.w   #3,d1          make legal index
+           0003
+00374 0144 41fa            lea.l    BitsDefs(pc),a0 point to bits/char table
+           ffca
+00375 0148 8430            or.b     (a0,d1.w),d2   add into d2
+           1000
+00376 014c 3200            move.w   d0,d1          get stop bit value
+00377 014e e849            lsr.w    #4,d1          make index value
+00378 0150 0241            andi.w   #3,d1          make legal index
+           0003
+00379 0154 41fa            lea.l    StopDefs(pc),a0 point to stop bit table
+           ffbe
+00380 0158 1230            move.b   (a0,d1.w),d1   get stop bit value
+           1000
+00381 015c 6b00            bmi      BadMode        ???
+           00ae
+00382 0160 177c            move.b   #10,MPSCntl(a3) disable xmit & rec
+           000a0002
+00383                      DELAY                   
+00384 016a 177c            move.b   #$10,MPSCntl(a3) set mode reg 1
+           00100002
+00385                      DELAY                   
+00386 0174 842a            or.b     RTSmode(a2),d2 add RxRTS h/w handshake mode
+           0534
+00387 0178 1742            move.b   d2,MPSMode(a3) set parity/bit
+           0000
+00388 017c 1540            move.b   d0,Parity(a2)  save parity code
+           002e
+00389 0180 822a            or.b     TXmode(a2),d1  add Tx h/w handshake mode
+           0536
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    10
+ hw82c684.a
+ - 
+00390 0184 1741            move.b   d1,MPSMode(a3) set stopbits
+           0000
+00391 
+00392 0188 4a2a            tst.b    RTSstate(a2)   need to assert RTS ?
+           0535
+00393 018c 6704            beq.s    BitPar20       ..no; branch on
+00394 018e 6100            bsr      EnabRTS        go assert RTS line manually
+           028e
+00395           BitPar20                           
+00396 
+00397 0192 7200            moveq.l  #0,d1          no errors
+00398 0194 4e75            rts                     
+00399 
+00400 *
+00401 * NetId
+00402 *   read installation address switch
+00403 *   to get netnode address
+00404 *
+00405 * returns: (d0.w) = address
+00406 *
+00407 0196=202a NetId      move.l   V_PORT(a2),d0  get device port
+           0000
+00408 019a 0200            andi.b   #256-MPSSubs*MPSOffs,d0 remove lsb bits
+           00e0
+00409 019e 2040            movea.l  d0,a0          set pointer to the chip
+00410 01a0 1028            move.b   MPSIp(a0),d0   get input byte 1
+           000d
+00411 01a4 1228            move.b   MPSIp+MPSOffs*2(a0),d1 get input byte 2
+           001d
+00412 01a8 e848            lsr.w    #4,d0          shift DIP1-4 into b0..b3
+00413 01aa 0240            andi.w   #$000F,d0      keep b0..b3
+           000f
+00414 01ae 0801            btst     #1,d1          is DIP10 set?
+           0001
+00415 01b2 6704            beq.s    NetId1         no...
+00416 01b4 08c0            bset     #9,d0          set b9
+           0009
+00417 01b8 e341 NetId1     asl.w    #1,d1          shift DIP5-9 into b4..b8
+00418 01ba 0241            andi.w   #$01F0,d1      keep b4..b8
+           01f0
+00419 01be 8041            or.w     d1,d0          add bits to d0
+00420 01c0 3540            move.w   d0,Station(a2) setup node address
+           002c
+*** warning - absolute addressing ***
+00421 01c4 33c0            move.w   d0,$402        save in DT-08 globals
+           00000402
+00422 01ca 7200            moveq.l  #0,d1          no errors
+00423 01cc 4e75            rts                     
+00424 
+00425 *
+00426 * BaudCalc
+00427 *   setup the baudrate for this port
+00428 *
+00429 * passed: (d0.b) = the os9 baudrate code value
+00430 *
+00431 01ce=266a BaudCalc   movea.l  V_PORT(a2),a3  get device port
+           0000
+00432 01d2 0240            andi.w   #$00FF,d0      
+           00ff
+00433 01d6 0c40            cmpi.w   #MaxBaud,d0    legal baud rate?
+           0034
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    11
+ hw82c684.a
+ - 
+00434 01da 6c30            bge.s    BadMode        no..
+00435 01dc 3200            move.w   d0,d1          take a snapshot
+00436 01de e341            asl.w    #1,d1          make word offset
+00437 01e0 41fa            lea.l    BaudTable(pc),a0 get table
+           0034
+00438 01e4 3230            move.w   (a0,d1.w),d1   get rate value
+           1000
+00439 *	 lea.l BaudTable+1(pc),a0
+00440 *	 clr.w d2 sweep d2
+00441 *	 move.b (a0,d0.w),d2 get packet size
+00442 01e8 0c01            cmpi.b   #N_A,d1        available?
+           0001
+00443 01ec 671e            beq.s    BadMode        no..
+00444 01ee 1741            move.b   d1,MPSCntl(a3) $80 = Set Rx X / $90 = Clear Rx X
+           0002
+00445                      DELAY                   
+00446 01f6 0001            ori.b    #$20,d1        
+           0020
+00447 01fa 1741            move.b   d1,MPSCntl(a3) $a0 = Set Tx X / $b0 = Clear Tx X
+           0002
+00448 
+00449 01fe e059            ror.w    #8,d1          
+00450 
+00451 0200 1741            move.b   d1,MPSBdSt(a3) set baudrate in device
+           0001
+00452 0204 1540            move.b   d0,BaudRate(a2) save current baudcode
+           002f
+00453 0208 7200            moveq.l  #0,d1          no error
+00454 020a 4e75            rts                     
+00455 020c=323c BadMode    move.w   #E$BMode,d1    set error code
+           0000
+00456 0210=003c            ori.b    #Carry,ccr     set error
+           0000
+00457 0214 4e75            rts                     
+00458 
+00459  00000001 N_A        equ      $01            not available baudrate
+00460 
+00461           BaudTable                          
+00462 0216 0090            dc.b     $00,$90        0 = 50 baud
+00463 0218 0080            dc.b     $00,$80        1 = 75 not available		X = 1
+00464 021a 1190            dc.b     $11,$90        2 = 110 baud
+00465 021c 2290            dc.b     $22,$90        3 = 134.5 baud
+00466 021e 3380            dc.b     $33,$80        4 = 150 not available		X = 1
+00467 0220 4490            dc.b     $44,$90        5 = 300 baud
+00468 0222 5590            dc.b     $55,$90        6 = 600 baud
+00469 0224 6690            dc.b     $66,$90        7 = 1200 baud
+00470 0226 aa80            dc.b     $AA,$80        8 = 1800 not available		X = 1
+00471 0228 0001            dc.b     $00,N_A        9 = 2000 not available
+00472 022a 8890            dc.b     $88,$90        A = 2400 baud
+00473 022c 4480            dc.b     $44,$80        B = 3600 not available		X = 1
+00474 022e 9990            dc.b     $99,$90        C = 4800 baud
+00475 0230 aa90            dc.b     $AA,$90        D = 7200 baud
+00476 0232 bb90            dc.b     $BB,$90        E = 9600 baud
+00477 * dc.b $cc,$80		F = 19200 not available		X = 1
+00478 0234 cc01            dc.b     $cc,N_A        F = 19200 not available		X = 1
+00479 0236 cc90            dc.b     $CC,$90        10 = 38400 baud
+00480 0238 dd90            dc.b     $DD,$90        11 = Timer baud
+00481 023a ee90            dc.b     $EE,$90        12 = EXT 16x baud
+00482 023c ff90            dc.b     $FF,$90        13 = EXT 1x baud
+00483 023e 3390            dc.b     $33,$90        14 = 200 baud
+00484 0240 7790            dc.b     $77,$90        15 = 1050 baud
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    12
+ hw82c684.a
+ - 
+00485 
+00486 0242 5580            dc.b     $55,$80        16 = 14400 baud			X = 1
+00487 0244 6680            dc.b     $66,$80        17 = 28800 baud			X = 1
+00488 0246 7780            dc.b     $77,$80        18 = 57600 baud			X = 1
+00489 0248 8880            dc.b     $88,$80        19 = 115200 baud		X = 1
+00490  00000034 MaxBaud    equ      *-BaudTable    
+00491 
+00492 *
+00493 * Write
+00494 *   write one character to the device buffers,
+00495 *   also provide flowcontrol when the buffer
+00496 *   gets down to empty. this routine
+00497 *   performs no i/o it only sets flags for the
+00498 *   interrupt server to see.
+00499 *
+00500 * passed: d0.b = byte to write
+00501 *         (a1) = address of path descriptor
+00502 *         (a2) = device static storage
+00503 *         (a4) = process descriptor
+00504 *         (a5) = callers register stack
+00505 *         (a6) = system globals
+00506 *
+00507           Write00                            
+00508 024a 6100            bsr      Sleep          zzz...
+           00d0
+00509 024e 0c6a Write      cmpi.w   #OutSize,OutCount(a2) is buffer full?
+           01000022
+00510 0254 64f4            bhs.s    Write00        yes.. wait for i/o
+00511 0256 206a            movea.l  OutWrite(a2),a0 get write pointer
+           0014
+00512 025a 10c0            move.b   d0,(a0)+       save char in the buffer
+00513 025c b1ea            cmpa.l   OutEnd(a2),a0  is ptr at buffer end?
+           0018
+00514 0260 6604            bne.s    Write1         no...
+00515 0262 41ea            lea      OutBuf(a2),a0  reset ptr to buffer start
+           0434
+00516 0266 2548 Write1     move.l   a0,OutWrite(a2) save updated write pointer
+           0014
+00517 026a 526a            addq.w   #1,OutCount(a2) add one to output level
+           0022
+00518 026e 0c6a            cmpi.w   #1,OutCount(a2) tx interrupts active?
+           00010022
+00519 0274 6204            bhi.s    Write9         yes.. dont re-enable
+00520 0276 6100            bsr      TxEnable       enable tx interrupts
+           0262
+00521 027a 7200 Write9     moveq    #0,d1          
+00522 027c 4e75            rts                     
+00523 
+00524 *
+00525 * TrmNat
+00526 *   this routine detaches the device from the
+00527 *   irq system and disables all interrupts from
+00528 *   its associated hardware.
+00529 *
+00530 * passed: (a1) = pointer to device descriptor module
+00531 *         (a2) = device static storage
+00532 *         (a4) = process descriptor pointer
+00533 *         (a6) = system globals
+00534 *
+00535           TrmNat00                           
+00536 027e 487a            pea.l    TrmNat(pc)     return here instead
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    13
+ hw82c684.a
+ - 
+           0008
+00537 0282 6100            bsr      Sleep          zzz...
+           0098
+00538 0286 588f            addq.l   #4,sp          skip pushed value
+00539           TrmNat                             
+00540 0288=302c            move.w   P$ID(a4),d0    get process id who is terminating this device
+           0000
+00541 028c=3540            move.w   d0,V_BUSY(a2)  change device user to this process
+           0000
+00542 0290=3540            move.w   d0,V_LPRC(a2)  and is also the last pid to use this device
+           0000
+00543 0294 4a6a            tst.w    OutCount(a2)   any more chars waiting for output?
+           0022
+00544 0298 66e4            bne.s    TrmNat00       yes.. wait for output irqs to die
+00545 
+00546 029a 4a2a            tst.b    RTSstate(a2)   RTS asserted ?
+           0535
+00547 029e 6704            beq.s    TrmNat20       ..no; no need to negate
+00548 02a0 6100            bsr      DisablRTS      go negate RTS line
+           01be
+00549           TrmNat20                           
+00550 
+00551 02a4=266a            movea.l  V_PORT(a2),a3  get device port
+           0000
+00552 02a8 6100            bsr      TxDisable      remove tx-interrupts
+           0260
+00553 02ac 6100            bsr      RxDisable      remove rx-interrupts
+           01fc
+00554 02b0=1029            move.b   M$Vector(a1),d0 get device vector
+           0000
+00555 02b4 91c8            suba.l   a0,a0          set handler to 0
+00556 02b6=4e40            os9      F$IRQ          remove device from devs table
+           0000
+00557 02ba 7200            moveq    #0,d1          return carry clear
+00558 02bc 4e75            rts                     
+00559 
+00560 *
+00561 * Read
+00562 *   this routine reads one byte from the device buffers
+00563 *   and returns it to the caller (usually os9).
+00564 *   it also performs flowcontrol when the buffer level
+00565 *   goes down to 10%, note that no direct i/o is performed.
+00566 *   this routine only sets flags for the interrupt server
+00567 *   to see.
+00568 *
+00569 * passed: (a1) = address of path descriptor
+00570 *         (a2) = device static storage
+00571 *         (a4) = process descriptor
+00572 *         (a5) = pointer to callers register stack
+00573 *         (a6) = system globals
+00574 *
+00575           Read00                             
+*** warning - destination in short branch range ***
+00576 02be 6100            bsr      Sleep          zzz... wait for I/O interrupt
+           005c
+00577           Read                               
+00578 02c2 4a6a            tst.w    InCount(a2)    any bytes in the input buffer?
+           0020
+00579 02c6 67f6            beq.s    Read00         no.. wait for i/o
+00580 02c8 206a            movea.l  InRead(a2),a0  get read pointer
+           0004
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    14
+ hw82c684.a
+ - 
+00581 02cc 1018            move.b   (a0)+,d0       get the next char from the buffer
+00582 02ce b1ea            cmpa.l   InEnd(a2),a0   is ptr at buffer end?
+           000c
+00583 02d2 6604            bne.s    Read1          no...
+00584 02d4 41ea            lea      InBuf(a2),a0   set ptr to buffer start
+           0034
+00585 02d8 2548 Read1      move.l   a0,InRead(a2)  save updated read pointer
+           0004
+00586 02dc 536a            subq.w   #1,InCount(a2) update buffer level
+           0020
+00587 02e0 0c6a            cmpi.w   #InLvl10,InCount(a2) down to 10% level?
+           00660020
+00588 02e6 621e            bhi.s    Read2          no... not yet
+00589 02e8 4a2a            tst.b    Action(a2)     check action flag
+           0031
+00590 02ec 6618            bne.s    Read2          already trying to send flow control!
+00591 02ee 4a2a            tst.b    InHalt(a2)     check halted state
+           0032
+00592 02f2 6712            beq.s    Read2          not halted!
+00593 02f4=156a            move.b   V_XON(a2),InHalt(a2) set ascii to send
+           00000032
+00594 02fa 670a            beq.s    Read2          not defined
+00595 02fc 08ea            bset     #0,Action(a2)  set action flag
+           00000031
+00596 0302 6100            bsr      TxEnable       arrange for it to be sent
+           01d6
+00597 0306=136a Read2      move.b   V_ERR(a2),PD_ERR(a1) copy I/O stat to PathDesc
+           00000000
+00598 030c 670c            beq.s    Read9          no error?
+00599 030e=422a            clr.b    V_ERR(a2)      clear error status
+           0000
+00600 0312=323c            move.w   #E$Read,d1     set read error
+           0000
+00601 0316=003c            ori.b    #Carry,ccr     set error flag
+           0000
+00602 031a 4e75 Read9      rts                     return status to caller
+00603 
+00604 *
+00605 * Sleep
+00606 *   this subroutine puts the caller process
+00607 *   to sleep waiting for signals from the
+00608 *   interrupt server, if the signal is S$Wake
+00609 *   sleep returns to its caller, otherwise Sleep
+00610 *   will return to the callers caller, thus
+00611 *   sending the signal code to the caller of
+00612 *   the device driver (usually os9).
+00613 *
+00614 031c 2f00 Sleep      move.l   d0,-(sp)       save reg
+00615 031e=356a            move.w   V_BUSY(a2),V_WAKE(a2) arrange for wakeup
+           00000000
+00616 0324 7000            moveq.l  #0,d0          sleep forever
+00617                      OS9svc   F$Sleep wait for an interrupt 
+00618 033c=322c            move.w   P$Signal(a4),d1 get signal
+           0000
+00619 0340 6706            beq.s    Sleep90        no signal?
+00620 0342=0c41            cmpi.w   #S$Intrpt,d1   deadly signal?
+           0000
+00621 0346 630c            bls.s    SleepEr        yes..
+00622 0348=082c Sleep90    btst.b   #Condemn,P$State(a4) has process died?
+           00000000
+00623 034e 6604            bne.s    SleepEr        yes.. return error
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    15
+ hw82c684.a
+ - 
+00624 0350 201f            move.l   (sp)+,d0       restore reg
+00625 0352 4e75            rts                     return to caller
+00626 0354 508f SleepEr    addq.l   #8,sp          remove caller from the stack
+00627 
+00628 *
+00629 * GetStat
+00630 *   this routine is called for every I$GetStt call
+00631 *   made to this driver.
+00632 *
+00633 * Supported functions are:  SS_Ready, SS_EOF and SS_Opt
+00634 *
+00635 * passed: d0.w = function code
+00636 *         (a1) = address of path descriptor
+00637 *         (a2) = device static storage
+00638 *         (a4) = process descriptor
+00639 *         (a5) = pointer to callers register stack
+00640 *         (a6) = system globals
+00641 *
+00642 0356=003c Abort      ori      #Carry,ccr     return Carry set
+           0000
+00643 035a 4e75            rts                     
+00644 035c=323c ErrNtRdy   move.w   #E$NotRdy,d1   
+           0000
+00645 0360 60f4            bra.s    Abort          
+00646           GetStat                            
+00647 0362=0c40            cmpi.w   #SS_Ready,d0   is it SS_Ready function?
+           0000
+00648 0366 660e            bne.s    GetStat10      no..
+00649 0368=426d            clr.w    R$d1(a5)       clear msbs of callers d1 register
+           0000
+00650 036c=3b6a            move.w   InCount(a2),R$d1+2(a5) return buffer level
+           00200002
+00651 0372 67e8            beq.s    ErrNtRdy       error?
+00652 0374 601a            bra.s    GetStat99      no error!
+00653 
+00654 0376=0c40 GetStat10  cmpi.w   #SS_EOF,d0     is it SS_EOF function?
+           0000
+00655 037a 6714            beq.s    GetStat99      yes.. SCF devs never returns EOF
+00656 
+00657 037c=0c40 GetStat20  cmpi.w   #SS_Opt,d0     is it SS_Opt function?
+           0000
+00658 0380 6600            bne      Unknown        no...
+           00e8
+00659 0384=136a            move.b   BaudRate(a2),PD_BAU(a1) set currently active baudrate
+           002f0000
+00660 038a=136a            move.b   Parity(a2),PD_PAR(a1) set currently active parity
+           002e0000
+00661 0390 7200 GetStat99  moveq    #0,d1          no error return
+00662 0392 4e75            rts                     
+00663 
+00664 *
+00665 * PutStat
+00666 *   this routine is called for every I$SetStt call made
+00667 *   to this driver.
+00668 *
+00669 * Supported functions are: SS_Opt, SS_SSig, SS_Relea
+00670 *                          and SS_Open
+00671 *
+00672 *	and now also SS_EnRTS and SS_DsRTS
+00673 *
+00674           PutStat                            
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    16
+ hw82c684.a
+ - 
+00675 0394=0c40            cmpi.w   #SS_Opt,d0     is it set SS_Opt function?
+           0000
+00676 0398 6620            bne.s    PutStat10      no...
+00677 039a=1029 PutStat1   move.b   PD_BAU(a1),d0  get current baudrate
+           0000
+00678 039e b02a            cmp.b    BaudRate(a2),d0 has it changed?
+           002f
+00679 03a2 6706            beq.s    PutStat2       no.. check parity
+00680 03a4 6100            bsr      BaudCalc       calculate and set new baudrate
+           fe28
+00681 03a8 650e            bcs.s    PutStat3       error?
+00682 03aa=1029 PutStat2   move.b   PD_PAR(a1),d0  get current parity/mode
+           0000
+00683 03ae b02a            cmp.b    Parity(a2),d0  has comms mode changed?
+           002e
+00684 03b2 67dc            beq.s    GetStat99      no.. nothing has changed
+00685 03b4 6100            bsr      BitPar         set bits/parity
+           fd62
+00686 03b8 4e75 PutStat3   rts                     return to caller
+00687           PutStat10                          
+00688 03ba=0c40            cmpi.w   #SS_SSig,d0    is it SS_SSig function?
+           0000
+00689 03be 662e            bne.s    PutStat20      no..
+00690 03c0 4a6a            tst.w    SigPrc(a2)     signalling facility in use?
+           0026
+00691 03c4 6696            bne.s    ErrNtRdy       yes..
+00692 03c6=3029            move.w   PD_CPR(a1),d0  get callers process id
+           0000
+00693 03ca=322d            move.w   R$d2+2(a5),d1  get signal code
+           0002
+00694 03ce 40e7            move.w   sr,-(sp)       save sr register
+00695 03d0 46ea            move.w   IRQMask(a2),sr set irq masks
+           0024
+00696 03d4 4a6a            tst.w    InCount(a2)    any data?
+           0020
+00697 03d8 660e            bne.s    PutStat19      yes.. signal right away
+00698 03da=3429            move.w   PD_PD(a1),d2   get associated pathnr
+           0000
+00699 03de 48aa            movem.w  d0-d2,SigPrc(a2) save pid, signal, path
+           00070026
+00700 03e4 46df            move.w   (sp)+,sr       unmask irqs
+00701 03e6 60a8            bra.s    GetStat99      exit without errors
+00702 03e8 46df PutStat19  move.w   (sp)+,sr       unmask irqs
+00703 03ea 6000            bra      SendSig        and send the signal
+           02ca
+00704           PutStat20                          
+00705 03ee=0c40            cmpi.w   #SS_Relea,d0   is it SS_Relea function?
+           0000
+00706 03f2 661c            bne.s    PutStat30      no...
+00707 03f4=3029            move.w   PD_CPR(a1),d0  get pid
+           0000
+00708 03f8=3429            move.w   PD_PD(a1),d2   get pathnr
+           0000
+00709 03fc 47ea            lea.l    SigPrc(a2),a3  get SigPrc location
+           0026
+00710 0400 b053            cmp.w    (a3),d0        is signal for this process
+00711 0402 6608            bne.s    PutStat29      no..
+00712 0404 b46b            cmp.w    4(a3),d2       does it concern this path?
+           0004
+00713 0408 6602            bne.s    PutStat29      no..
+00714 040a 4253            clr.w    (a3)           remove pid from SigPrc
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    17
+ hw82c684.a
+ - 
+00715 040c 7200 PutStat29  moveq.l  #0,d1          no error
+00716 040e 4e75            rts                     
+00717           PutStat30                          
+00718 0410=0c40            cmpi.w   #SS_Open,d0    is it SS_Open function?
+           0000
+*** warning - destination in short branch range ***
+00719 0414 6700            beq      PutStat1       yes..
+           ff84
+00720 
+00721 0418=0c40            cmpi.w   #SS_EnRTS,d0   is it enable RTS ?
+           0000
+00722 041c 663c            bne.s    PutStat32      
+00723           EnabRTS                            
+00724 041e 303c            move.w   #MPSOprSet,d0  set register offset
+           000e
+00725 0422 50ea            st.b     RTSstate(a2)   flag RTS asserted
+           0535
+00726           EnabRTS10                          
+00727 0426=242a            move.l   V_PORT(a2),d2  get device port
+           0000
+00728 042a 0202            andi.b   #256-MPSSubs*MPSOffs,d2 remove lsb bits
+           00e0
+00729 042e 2642            movea.l  d2,a3          
+00730 0430 343c            move.w   #0,d2          assume A-side
+           0000
+00731 0434=082a            btst     #ABbit,V_PORT+3(a2) is A or B-side ?
+           00030003
+00732 043a 6704            beq.s    EnabRTS_A      is A-side!
+00733 043c 343c            move.w   #1,d2          B-side offset
+           0001
+00734           EnabRTS_A                          
+00735 0440=082a            btst     #4,V_PORT+3(a2) is A/B-side or C/D-side ?
+           00040003
+00736 0446 670a            beq.s    EnabRTS_AB     its AB-side, go for OP1
+00737 0448 0640            addi.w   #MPSOffs*2,d0  add up to OP2
+           0010
+00738 044c 1782            move.b   d2,(a3,d0.w)   and set/reset appropriate bit in OP2
+           0000
+00739 0450 6004            bra.s    EnabRTS_OK     
+00740           EnabRTS_AB                         
+00741 0452 1782            move.b   d2,(a3,d0.w)   set/reset in OP1
+           0000
+00742           EnabRTS_OK                         
+00743 0456 7200            moveq.l  #0,d1          no error
+00744 0458 4e75            rts                     
+00745 
+00746           PutStat32                          
+00747 045a=0c40            cmpi.w   #SS_DsRTS,d0   is it disable RTS ?
+           0000
+00748 045e 660a            bne.s    Unknown        branch if not
+00749           DisablRTS                          
+00750 0460 303c            move.w   #MPSOprRes,d0  clear register offset
+           000f
+00751 0464 51ea            sf.b     RTSstate(a2)   flag RTS negated
+           0535
+00752 0468 60bc            bra.s    EnabRTS10      
+00753 
+*** warning - absolute addressing ***
+00754 046a 33c0 Unknown    move.w   d0,$400        save for debug
+           00000400
+00755 0470=323c            move.w   #E$UnkSvc,d1   Unknown service code
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    18
+ hw82c684.a
+ - 
+           0000
+00756 0474=003c            ori.b    #Carry,ccr     
+           0000
+00757 0478 4e75            rts                     
+00758 
+00759 *
+00760 * RxEnable
+00761 *   enable rx-interrupts by programming the
+00762 *   shared interrupt mask register for this
+00763 *   device.
+00764 *
+00765 * returns: (a0) = pointer to shadow register(s)
+00766 *          (a3) = device port
+00767 *
+00768 047a=266a RxEnable   movea.l  V_PORT(a2),a3  get device port
+           0000
+00769 047e 206a            movea.l  Shadow(a2),a0  get shadow reg ptr
+           0000
+00770 0482=082a            btst     #ABbit,V_PORT+3(a2) is A or B-side?
+           00030003
+00771 0488 6710            beq.s    RxEnA          is A-side!
+00772 048a 08ea RxEnB      bset     #RxBitB,IrqFlags(a2) set interrupt enable B
+           00050030
+00773 0490 08d0            bset     #RxBitB,(a0)   and also in shadow regs
+           0005
+00774 0494 1750            move.b   (a0),MPSImrB(a3) now program the device
+           fffd
+00775 0498 4e75            rts                     
+00776 049a 08ea RxEnA      bset     #RxBitA,IrqFlags(a2) set interrupt enable A
+           00010030
+00777 04a0 08d0            bset     #RxBitA,(a0)   and also in shadow regs
+           0001
+00778 04a4 1750            move.b   (a0),MPSImr(a3) now program the device
+           0005
+00779 04a8 4e75            rts                     
+00780 
+00781 *
+00782 * RxDisable
+00783 *   disable rx-interrupts by programming the
+00784 *   shared interrupt mask register for this
+00785 *   device.
+00786 *
+00787 * returns: (a0) = pointer to shadow register(s)
+00788 *          (a3) = device port
+00789 *
+00790 04aa=266a RxDisable  movea.l  V_PORT(a2),a3  get device port
+           0000
+00791 04ae 206a            movea.l  Shadow(a2),a0  get pointer to shadow reg
+           0000
+00792 04b2=082a            btst     #ABbit,V_PORT+3(a2) is A or B-side?
+           00030003
+00793 04b8 6710            beq.s    RxDisA         is A-side!
+00794 04ba 08aa RxDisB     bclr     #RxBitB,IrqFlags(a2) disable rx interrupt
+           00050030
+00795 04c0 0890            bclr     #RxBitB,(a0)   also in shadow regs
+           0005
+00796 04c4 1750            move.b   (a0),MPSImrB(a3) now program the device
+           fffd
+00797 04c8 4e75            rts                     
+00798 04ca 08aa RxDisA     bclr     #RxBitA,IrqFlags(a2) disable rx interrupt
+           00010030
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    19
+ hw82c684.a
+ - 
+00799 04d0 0890            bclr     #RxBitA,(a0)   also in shadow regs
+           0001
+00800 04d4 1750            move.b   (a0),MPSImr(a3) now program the device
+           0005
+00801 04d8 4e75            rts                     
+00802 
+00803 *
+00804 * TxEnable
+00805 *   update the hardware to enable tx-interrupts
+00806 *
+00807 * returns: (a0) = pointer to shadow register(s)
+00808 *          (a3) = device port
+00809 *
+00810 04da=266a TxEnable   movea.l  V_PORT(a2),a3  get device port
+           0000
+00811 04de 206a            movea.l  Shadow(a2),a0  get shadow reg ptr
+           0000
+00812 04e2=082a            btst     #ABbit,V_PORT+3(a2) is A/B-side?
+           00030003
+00813 04e8 6710            beq.s    TxEnA          is A-side!
+00814 
+00815           TxEnB                              
+00816 04ea 08d0            bset     #TxBitB,(a0)   enable tx irqs
+           0004
+00817 04ee 08ea            bset     #TxBitB,IrqFlags(a2) enable flags also
+           00040030
+00818 04f4 1750            move.b   (a0),MPSImrB(a3) update Imr register
+           fffd
+00819 04f8 4e75            rts                     
+00820 
+00821           TxEnA                              
+00822 04fa 08d0            bset     #TxBitA,(a0)   enable tx irqs
+           0000
+00823 04fe 08ea            bset     #TxBitA,IrqFlags(a2) enable flags also
+           00000030
+00824 0504 1750            move.b   (a0),MPSImr(a3) update Imr register
+           0005
+00825 0508 4e75            rts                     
+00826 
+00827 *
+00828 * TxDisable
+00829 *   update hardware and disable tx-interrupt
+00830 *   requests from it.
+00831 *
+00832 * returns: (a0) = pointer to shadow register(s)
+00833 *          (a3) = device port
+00834 *
+00835 050a=266a TxDisable  movea.l  V_PORT(a2),a3  get device port
+           0000
+00836 050e 206a            movea.l  Shadow(a2),a0  get shadow reg ptr
+           0000
+00837 0512=082a            btst     #ABbit,V_PORT+3(a2) is A/B-side?
+           00030003
+00838 0518 6710            beq.s    TxDisA         is A-side!
+00839 
+00840           TxDisB                             
+00841 051a 0890            bclr     #TxBitB,(a0)   disable tx irqs
+           0004
+00842 051e 1750            move.b   (a0),MPSImrB(a3) update Imr register
+           fffd
+00843 0522 08aa            bclr     #TxBitB,IrqFlags(a2) remove from flags also
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    20
+ hw82c684.a
+ - 
+           00040030
+00844 0528 4e75            rts                     
+00845 
+00846           TxDisA                             
+00847 052a 0890            bclr     #TxBitA,(a0)   disable tx irqs
+           0000
+00848 052e 1750            move.b   (a0),MPSImr(a3) update Imr register
+           0005
+00849 0532 08aa            bclr     #TxBitA,IrqFlags(a2) remove from flags also
+           00000030
+00850 0538 4e75            rts                     
+00851 
+00852 *
+00853 * OutIrq
+00854 *   this is the output interrupt service subroutine,
+00855 *   it is called for every detected output interrupt
+00856 *   from this port. OutIrq checks in order:
+00857 *   1. If a flowcontrol signal for the input buffer
+00858 *      must be sent, this is signalled through the InHalt
+00859 *      flag.
+00860 *   2. If the remote station has requested X-OFF
+00861 *   3. If the output buffer no longer contains any data.
+00862 *   4. Sends the next character and checks to see if the
+00863 *      owner process should be signalled to wake up.
+00864 *
+00865 053a 4a2a OutIrq     tst.b    Action(a2)     any flowcontrol?
+           0031
+00866 053e 6718            beq.s    OutIrq2        no..
+00867 0540 102a            move.b   InHalt(a2),d0  
+           0032
+00868 0544 1740            move.b   d0,MPSData(a3) send flowcontrol char
+           0003
+00869 0548=b02a            cmp.b    V_XON(a2),d0   did we send X-ON?
+           0000
+00870 054c 6604            bne.s    OutIrq1        no..
+00871 054e 422a            clr.b    InHalt(a2)     remove input halted state
+           0032
+00872 0552 422a OutIrq1    clr.b    Action(a2)     action done
+           0031
+00873 0556 4e75            rts                     
+00874 0558 4a2a OutIrq2    tst.b    OutHalt(a2)    is output halt requested?
+           0033
+00875 055c 6706            beq.s    OutIrq4        no..
+00876 055e 61aa OutIrq3    bsr.s    TxDisable      remove tx interrupt
+00877 0560 7200            moveq    #0,d1          no error
+00878 0562 4e75            rts                     
+00879 0564 4a6a OutIrq4    tst.w    OutCount(a2)   is buffer empty?
+           0022
+00880 0568 67f4            beq.s    OutIrq3        yes.. disable tx interrupt
+00881 056a 206a            movea.l  OutRead(a2),a0 get read pointer
+           0010
+00882 056e 1758            move.b   (a0)+,MPSData(a3) send the next char
+           0003
+00883 0572 b1ea            cmpa.l   OutEnd(a2),a0  is ptr at buffer end?
+           0018
+00884 0576 6604            bne.s    OutIrq5        no..
+00885 0578 41ea            lea      OutBuf(a2),a0  reset ptr to buffer start
+           0434
+00886 057c 2548 OutIrq5    move.l   a0,OutRead(a2) save updated read pointer
+           0010
+00887 0580 536a            subq.w   #1,OutCount(a2) remove one char from buffer
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    21
+ hw82c684.a
+ - 
+           0022
+00888 0584 0c6a            cmpi.w   #OutLvl10,OutCount(a2) is at 10% level?
+           00190022
+00889 058a 6500            blo      WakeUp         send user a wakeup signal
+           011e
+00890           OutIrq9                            
+00891 058e 7200            moveq    #0,d1          no error
+00892 0590 4e75            rts                     
+00893 
+00894 *
+00895 * IrqRutB
+00896 *   this is the interrupt service entry for all
+00897 *   B-side devices.
+00898 *
+00899 * passed: (a2) = device static storage
+00900 *         (a3) = device port
+00901 *         (a6) = system globals
+00902 *
+00903 0592 102b IrqRutB    move.b   MPSImrB(a3),d0 get interrupt flags
+           fffd
+00904 0596 c02a            and.b    IrqFlags(a2),d0 remove inactive bits
+           0030
+00905 059a 670c            beq.s    IrqErrB        not this device?
+00906 059c 0800            btst     #RxBitB,d0     is it rx-interrupt?
+           0005
+00907 05a0 662a            bne.s    IrqInA         yes...
+00908 05a2 0800            btst     #TxBitB,d0     is it tx-interrupt?
+           0004
+00909 05a6 6692            bne.s    OutIrq         yes..
+00910 05a8=003c IrqErrB    ori.b    #Carry,ccr     set carry
+           0000
+00911 05ac 4e75            rts                     
+00912 
+00913 *
+00914 * IrqRutA
+00915 *   this is the interrupt service entry for all
+00916 *   A-side devices.
+00917 *
+00918 * passed: (a2) = device static storage
+00919 *         (a3) = device port
+00920 *         (a6) = system globals
+00921 *
+00922 05ae 102b IrqRutA    move.b   MPSImr(a3),d0  get interrupt flags
+           0005
+00923 05b2 c02a            and.b    IrqFlags(a2),d0 remove inactive bits
+           0030
+00924 05b6 670e            beq.s    IrqErrA        not this device?
+00925 05b8 0800            btst     #RxBitA,d0     is it rx-interrupt?
+           0001
+00926 05bc 660e            bne.s    IrqInA         yes..
+00927 05be 0800            btst     #TxBitA,d0     is it tx-interrupt?
+           0000
+00928 05c2 6600            bne      OutIrq         yes..
+           ff76
+00929 05c6=003c IrqErrA    ori.b    #Carry,ccr     set carry
+           0000
+00930 05ca 4e75            rts                     
+00931 
+00932 *
+00933 * IrqInA
+00934 *   this is the interrupt service subroutine for
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    22
+ hw82c684.a
+ - 
+00935 *   all input interrupts detected from this device.
+00936 *   it checks in order:
+00937 *   1. special flowcontrol chars and other special chars
+00938 *   2. if the buffer has reached 90% and attempts to send
+00939 *      X-OFF if so.
+00940 *   3. if the user has requested a signal to be sent
+00941 *      (SS_SSig call)
+00942 *   4. and finally if any sleeping owner should be
+00943 *      sent a wakeup signal.
+00944 *
+00945           IrqInA                             
+00946 05cc 122b            move.b   MPSBdSt(a3),d1 get status
+           0001
+00947 05d0 0201            andi.b   #$70,d1        keep error bits
+           0070
+00948 05d4 6718            beq.s    IrqInAA        no errors?
+00949 
+00950 05d6 0c01            cmpi.b   #$20,d1        check parity error		added 931117
+           0020
+00951 05da 6608            bne.s    notperr        not parity error
+00952 05dc 082a            btst     #7,Parity(a2)  no check enabled ?
+           0007002e
+00953 05e2 6604            bne.s    irqnop         if parity error, skip it
+00954           notperr                            
+00955 05e4=832a            or.b     d1,V_ERR(a2)   save accumulated errors
+           0000
+00956           irqnop                             
+00957 05e8 177c            move.b   #$40,MPSCntl(a3) reset error condition
+           00400002
+00958           IrqInAA                            
+00959 05ee 102b            move.b   MPSData(a3),d0 get input data byte
+           0003
+00960 05f2 6754            beq.s    InIRQ          impossible ctrl char?
+00961 05f4=b02a            cmp.b    V_INTR(a2),d0  is it keyboard interrupt?
+           0000
+00962 05f8 6728            beq.s    InAbort        yes..
+00963 05fa=b02a            cmp.b    V_QUIT(a2),d0  is it keyboard abort?
+           0000
+00964 05fe 6726            beq.s    InQuit         yes..
+00965 0600=b02a            cmp.b    V_XON(a2),d0   is it X-ON?
+           0000
+00966 0604 6710            beq.s    InXON          yes...
+00967 0606=b02a            cmp.b    V_XOFF(a2),d0  is it X-OFF?
+           0000
+00968 060a 663c            bne.s    InIRQ          no... buffer the char and exit
+00969 
+00970 *
+00971 * InXOFF
+00972 *   request output halt, the next output interrupt
+00973 *   will notice this flag and act upon it.
+00974 *
+00975 060c 1540 InXOFF     move.b   d0,OutHalt(a2) request output halt
+           0033
+00976 0610=003c            ori.b    #Carry,ccr     set carry
+           0000
+00977 0614 4e75            rts                     
+00978 
+00979 *
+00980 * InXON
+00981 *   request output continuation, enable output interrupts
+00982 *   and let the next output interrupt check this flag.
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    23
+ hw82c684.a
+ - 
+00983 *
+00984 0616 422a InXON      clr.b    OutHalt(a2)    remove output halted state
+           0033
+00985 061a 6100            bsr      TxEnable       enable tx interrupt
+           febe
+00986 061e 6000            bra      WakeUp         and wakeup owner
+           008a
+00987 
+00988 *
+00989 * InAbort
+00990 *   send a deadly Ctrl-C signal to the owner,
+00991 *   this signal will abort a user process.
+00992 *
+00993 0622=7200 InAbort    moveq.l  #S$Intrpt,d1   interrupt signal
+00994 0624 6002            bra.s    InQuit1        send deadly signal
+00995 
+00996 *
+00997 * InQuit
+00998 *   send a deadly Ctrl-B (break) signal to the owner,
+00999 *   this signal will abort a user process.
+01000 *
+01001 0626=7200 InQuit     moveq.l  #S$Abort,d1    abort signal
+01002 0628 1f00 InQuit1    move.b   d0,-(sp)       save input char
+01003 062a=302a            move.w   V_LPRC(a2),d0  get last process id
+           0000
+01004 062e 6716            beq.s    InQuit90       no last user?
+01005                      OS9svc   F$Send send signal to last user 
+01006 0646 101f InQuit90   move.b   (sp)+,d0       restore input char
+01007 
+01008 *
+01009 * InIRQ
+01010 *   any input interrupt with valid data will
+01011 *   arrive here to write the data to the device
+01012 *   buffer.
+01013 *
+01014 * passed: d0.b = input byte
+01015 *
+01016 0648 0c6a InIRQ      cmpi.w   #InSize,InCount(a2) is buffer currently filled?
+           04000020
+01017 064e 6508            blo.s    InIRQ0         no.. we can still write to it
+01018 0650=002a            ori.b    #$10,V_ERR(a2) set input overrun error
+           00100000
+01019 0656 6038            bra.s    InIRQ3         check signals and stuff
+01020 0658 206a InIRQ0     movea.l  InWrite(a2),a0 get write pointer
+           0008
+01021 065c 10c0            move.b   d0,(a0)+       put byte in the device buffer
+01022 065e b1ea            cmpa.l   InEnd(a2),a0   is at buffer end?
+           000c
+01023 0662 6604            bne.s    InIRQ1         no...
+01024 0664 41ea            lea      InBuf(a2),a0   reset pointer to buffer start
+           0034
+01025 0668 2548 InIRQ1     move.l   a0,InWrite(a2) update write pointer
+           0008
+01026 066c 526a            addq.w   #1,InCount(a2) add one to buffer level
+           0020
+01027 0670 0c6a            cmpi.w   #InLvl90,InCount(a2) is at 90% level?
+           03990020
+01028 0676 6518            blo.s    InIRQ3         no.. not yet
+01029 0678 4a2a            tst.b    InHalt(a2)     already halted?
+           0032
+01030 067c 6612            bne.s    InIRQ3         yes.. trust the other system to halt in time
+
+
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/08/15  09:09  Page    24
+ hw82c684.a
+ - 
+01031 067e=156a            move.b   V_XOFF(a2),InHalt(a2) set halted state
+           00000032
+01032 0684 670a            beq.s    InIRQ3         not defined?
+01033 0686 08ea            bset     #0,Action(a2)  action send X-OFF active
+           00000031
+01034 068c 6100            bsr      TxEnable       arrange for it to be sent
+           fe4c
+01035 0690 302a InIRQ3     move.w   SigPrc(a2),d0  any process waiting for SS_SSig?
+           0026
+01036 0694 670a            beq.s    InIRQ5         no..
+01037 0696 322a            move.w   SigPrc+2(a2),d1 get signal code to send
+           0028
+01038 069a 426a            clr.w    SigPrc(a2)     remove pid, job done
+           0026
+01039 069e 6016            bra.s    SendSig        send the signal
+01040 06a0 082b InIRQ5     btst     #0,MPSBdSt(a3) is more bytes available?
+           00000001
+01041 06a6 6600            bne      IrqInA         yes.. service immediately
+           ff24
+01042 
+01043 06aa=302a WakeUp     move.w   V_WAKE(a2),d0  owner waiting?
+           0000
+01044 06ae 671c            beq.s    Wake90         no... return anyway
+01045 06b0=426a            clr.w    V_WAKE(a2)     remove pid
+           0000
+01046 06b4=7200            moveq.l  #S$Wake,d1     set signal: S$Wake
+01047 
+01048           SendSig    OS9svc   F$Send wake up process 
+01049 
+01050 06cc 7200 Wake90     moveq    #0,d1          no error
+01051 06ce 4e75            rts                     
+01052 
+01053  000006d0            ends                    
+Errors: 00000
+Memory used: 0k
+Elapsed time: 3 second(s)
+

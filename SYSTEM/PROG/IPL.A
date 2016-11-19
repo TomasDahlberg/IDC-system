@@ -1,0 +1,21 @@
+Edition   equ 1
+Revision  equ 0
+
+Type_Lang set (Prgm<<8)!Objct
+Attr_Rev  set (ReEnt<<8)!Revision
+
+ psect ipl,Type_Lang,Attr_Rev,Edition,0,ipl
+
+ipl
+	movea.l    a5,a0
+	movea.l    #$442,a1
+l1	move.b     (a0)+,d0
+	move.b     d0,(a1)+
+	beq.s      e1
+	cmpi.b     #$d,d0
+	bne.s      l1
+e1
+	move.b     #$d,-(a1)
+	move.w     #$c0de,$440
+	moveq      #0,d1
+	os9        F$Exit

@@ -1,0 +1,23 @@
+phyio: traphand.r lcd.r siiio.r var.r dummy.r trapif.a
+            l68 traphand.r lcd.r siiio.r var.r -l=\os9c\lib/cio.l -l=\os9c\lib/clib.l -l=\os9c\lib/sys.l -O=phyio
+            del phyion.l
+            copy lcd.r/b+siiio.r+dummy.r phyion.l 
+            r68 -O=phyio.l trapif.a
+
+
+  
+traphand.r: traphand.a
+            r68 -O=traphand.r traphand.a
+
+lcd.r:      lcd.c
+            xcc -ixrs lcd.c
+
+siiio.r:    siiio.c
+            xcc -ixrs siiio.c
+
+var.r:      var.c
+            xcc -ixrs var.c
+
+dummy.r:    dummy.c
+            xcc -ixrs dummy.c
+

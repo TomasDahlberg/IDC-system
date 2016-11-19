@@ -1,0 +1,25 @@
+/*
+! The string 
+'IVT Electronic AB'
+! is encoded as;
+*/
+static unsigned char copyrightNotice[] = {
+  0x11, 0x58, 0x0e, 0x5a, 0x7a, 0x3f, 0x53, 0x36, 0x55, 0x21, 0x53, 0x3c, 
+  0x52, 0x3b, 0x58, 0x78, 0x39, 0x7b
+};
+/*
+! Use the following procedure to decode it;
+*/
+void printCopyright()
+{
+  int seed = 17;
+  int len;
+  unsigned char *str;
+  str = copyrightNotice;
+  len = *str++;
+  for (;len; len--) {
+    printf("%c", *str ^ seed);
+    seed = *str++;
+  }
+  printf("\n");
+}

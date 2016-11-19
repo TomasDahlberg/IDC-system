@@ -1,0 +1,70 @@
+*type     set      (1<<8)+1 
+*revs     set      (160<<8)+3
+*         psect    v,type,revs,2,256,main
+          psect    v,0,0,0,0,0
+
+reboot:  movea.l  #$380000,a0
+         movea.l  0(a0),a7
+         movea.l  4(a0),a1
+         jmp      (a1)
+
+verify:  move.l   #131072,d0            $20000 address of first mod
+         move.l   a0,-(sp)
+         bsr.s    install               update and install
+         bcs.s    err                   exit on error
+         bsr.s    install               install next
+         bcs.s    err
+
+*         move.l   d0,a0
+*         move.l   #$4afc0001,(a0)
+
+         bsr.s    install               and next
+         bcs.s    err
+         bsr.s    install               and next
+         bcs.s    err
+         bsr.s    install               and next
+         bcs.s    err
+         moveq.l  #0,d1                 mark no error
+err      
+         moveq.l  #0,d1                 skip error for now
+         move.l   d1,d0
+         move.l   (sp)+,a0
+         rts         
+*         os9      F$Exit
+
+install  bsr.s    updateCRC             update CRC
+         bcs.s    nomodule              sorry, no module found, exit
+         bsr.s    verifyModule          install, i.e. F$Verify
+         bcs.s    nomodule              no module, exit
+         move.l   d0,a0                 a0 module header address
+         move.l   4(a0),d1              get size
+         add.l    d1,d0                 update address pointer to 
+nomodule rts                            next module
+
+updateCRC
+         move.l   d0,-(sp)              push d0
+         move.l   d0,a0                 a0 = module header address
+         OS9      F$SetCRC              update its CRC
+         bcc.s    noseterr              no error, it was a module
+         addq.l   #4,sp                 skip d0
+         move     #1,ccr                set carry
+         rts
+
+noseterr move.l   (sp)+,d0              pop d0
+         rts
+
+verifyModule
+         move.l   d0,-(sp)              push d0
+         move.l   d0,a0                 a0 = module header address
+         moveq    #0,d0                 group system
+         OS9      F$VModul              verify and install module
+         bcc.s    novererr
+         cmpi.b   #231,d1               known module
+         beq.s    novererr
+         addq.l   #4,sp                 skip d0
+         move     #1,ccr                set carry
+         rts
+
+novererr move.l   (sp)+,d0              pop d0
+         rts
+

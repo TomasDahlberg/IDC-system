@@ -1,0 +1,58 @@
+
+ Volymen i enhet C saknar etikett
+ Volymen har serienummer 1303-1C21
+ Katalog i C:\IDC\DEVELOP\IDCIO
+
+NET      C          17 576 93-10-27    8.37
+TIMER    C           9 714 93-10-27    8.37
+RUNTIME_ C          25 749 93-10-27    8.37
+AL       C             976 93-10-27    8.37
+ALARM    C          13 251 93-10-27    8.37
+PID      C           3 581 93-10-27    8.35
+MSTIME   C           1 450 93-10-27    8.35
+DATAMODU C           3 027 93-10-27    8.35
+TEST_0   C           1 264 93-10-27    8.35
+VAR      C             795 93-10-27    8.35
+FINDMETA C           4 482 93-10-27    8.35
+DUMMY    C             819 93-10-27    8.35
+KURVAB   C           1 570 93-10-27    8.35
+TRAP_SCR C          24 546 93-10-27    8.36
+TESTNI10 C             990 93-10-27    8.36
+T        C             718 93-10-27    8.36
+RAND     C           1 159 93-10-27    8.36
+COUNTER  C           2 009 93-10-27    8.36
+ENTER    C          46 912 93-10-27    8.36
+SUBRCALL C             944 93-10-27    8.36
+PTC      C             865 93-10-27    8.36
+SCREEN   C           6 827 93-10-27    8.36
+BUG      C             122 93-10-27    8.36
+ENT      C           6 380 93-10-27    8.36
+OPTPID   C             861 93-10-27    8.36
+DOWNCOUN C           3 149 93-10-27    8.36
+STRN     C             195 93-10-27    8.36
+PT100    C           1 199 93-10-27    8.36
+WEEK     C           3 213 93-10-27    8.36
+PP       C           1 633 93-10-27    8.36
+TVPUMP   C           3 023 93-10-27    8.37
+INIT     C           1 082 93-10-27    8.37
+CLEARALA C             998 93-10-27    8.37
+TIMER_EV C           7 549 93-10-27    8.37
+TT       C             133 93-10-27    8.37
+ANALYS   C           1 944 93-10-27    8.37
+STR      C             423 93-10-27    8.37
+META_TES C           1 084 93-10-27    8.37
+CAL      C           3 454 93-10-27    8.37
+BIT      C           1 901 93-10-27    8.37
+CALLDBG  C             416 93-10-27    8.37
+MEMFREE  C           1 080 93-10-27    8.37
+INITDM   C           8 368 93-10-27    8.38
+CREATEDM C           3 532 93-10-27    8.38
+DEBUGSKR C             866 93-10-27    8.38
+ENT_CAL  C          15 931 93-10-27    8.38
+DBGIDCIO C             829 93-10-27    8.38
+NS       C           2 430 93-10-27    8.38
+INCDEC   C           2 994 93-10-27    8.38
+REDDAY   C          11 946 93-10-27    8.38
+INTPOL   C           4 607 93-10-27    8.38
+       51 fil(er)        260 566 byte
+                       2 408 448 byte lediga

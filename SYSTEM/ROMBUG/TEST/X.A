@@ -1,0 +1,19 @@
+type     set      (1<<8)+1 
+revs     set      (128<<8)+1
+
+
+ use ..\macro.d
+
+         psect    v,type,revs,2,256,main
+
+* +----------------------------------------+
+* |Nod 122.0, Batt=3670mV, (no-ipl-string!)|
+* |930927 13:45 Laddar IDCsystem 1.894...  |
+* +----------------------------------------+
+
+main:
+	bsr	emitNewFeatures
+	os9	F$Exit
+
+ ends
+

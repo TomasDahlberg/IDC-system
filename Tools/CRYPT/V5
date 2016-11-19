@@ -1,0 +1,25 @@
+/*
+! The string 
+'Licensnr 174711'
+! is encoded as;
+*/
+static unsigned char copyrightNotice[] = {
+  0x0f, 0x5d, 0x34, 0x57, 0x32, 0x5c, 0x2f, 0x41, 0x33, 0x13, 0x22, 0x15, 
+  0x21, 0x16, 0x27, 0x16
+};
+/*
+! Use the following procedure to decode it;
+*/
+void printCopyright()
+{
+  int seed = 17;
+  int len;
+  unsigned char *str;
+  str = copyrightNotice;
+  len = *str++;
+  for (;len; len--) {
+    printf("%c", *str ^ seed);
+    seed = *str++;
+  }
+  printf("\n");
+}

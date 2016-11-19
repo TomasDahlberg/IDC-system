@@ -1,0 +1,22 @@
+ Katalog i C:\IDC\TOOLS\GLUE
+
+driver   c           2 136 94-07-31   22.46
+ - vissa funktioner f”r hantering av globala variabler per screen
+
+findmeta c           3 116 92-04-16    9.59
+ - generell hantering av metavar
+
+func     c             689 94-07-31   22.57
+ - display, enter, enter_kurva etc
+
+glue     c           7 290 94-07-27   10.44
+ - program som tar speciell utdata fr†n IDCC och skapar output.c
+
+main_scr c          25 750 94-07-31   22.55
+ - genererad av IDCC
+
+output   c           5 200 94-07-27   13.28
+ - genererad av GLUE, en tabell ”ver globala variabler f”r varje sk„rm 
+
+win3208  c           5 085 94-07-31   22.53
+ - drivprogrammet

@@ -1,0 +1,21 @@
+Symbol 'str' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+Symbol 'mast' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+Symbol 'i2ascii' unresolved.
+	Referenced 3 times by psect 'v' in file 'x.r'
+Symbol 'emitChar' unresolved.
+	Referenced 2 times by psect 'v' in file 'x.r'
+Symbol 'emit' unresolved.
+	Referenced 6 times by psect 'v' in file 'x.r'
+Symbol 'cld' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+Symbol 'checkIpl' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+Symbol 'carriageReturn' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+Symbol 'I$Write' unresolved.
+	Referenced 3 times by psect 'v' in file 'x.r'
+Symbol 'F$Exit' unresolved.
+	Referenced by psect 'v' in file 'x.r'
+l68: error - unresolved references

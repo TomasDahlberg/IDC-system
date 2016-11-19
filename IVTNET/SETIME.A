@@ -1,0 +1,42 @@
+
+type     set      (1<<8)+1 
+revs     set      (128<<8)+1
+         psect    v,type,revs,2,256,main
+
+
+main:    move.l   a5,a0
+         bsr.s    asc2i
+         addi.l   #1900,d2
+         move.l   d2,d1
+         lsl.l    #8,d1
+         bsr.s    asc2i
+         or.l     d2,d1
+         lsl.l    #8,d1
+         bsr.s    asc2i
+         or.l     d2,d1
+
+         bsr.s    asc2i
+         move.l   d2,d0
+         lsl.l    #8,d0
+         bsr.s    asc2i
+         or.l     d2,d0
+         lsl.l    #8,d0
+         bsr.s    asc2i
+         or.l     d2,d0
+         os9      F$STime
+
+         moveq.l  #0,d1
+         os9      F$Exit
+
+asc2i    moveq.l  #0,d2
+         move.b   (a0)+,d2
+         mulu.w   #10,d2
+         moveq.l  #0,d3
+         add.b    (a0)+,d3
+         add.l    d3,d2
+         subi.l   #528,d2
+         addq.l   #1,a0
+         rts
+         
+
+

@@ -1,0 +1,25 @@
+/*
+! The string 
+'Version 1.21'
+! is encoded as;
+*/
+static unsigned char copyrightNotice[] = {
+  0x0c, 0x47, 0x22, 0x50, 0x23, 0x4a, 0x25, 0x4b, 0x6b, 0x5a, 0x74, 0x46, 
+  0x77
+};
+/*
+! Use the following procedure to decode it;
+*/
+void printCopyright()
+{
+  int seed = 17;
+  int len;
+  unsigned char *str;
+  str = copyrightNotice;
+  len = *str++;
+  for (;len; len--) {
+    printf("%c", *str ^ seed);
+    seed = *str++;
+  }
+  printf("\n");
+}

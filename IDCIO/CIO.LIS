@@ -1,0 +1,9 @@
+Header for:      cio
+Module size:     $4EE0       #20192   
+Owner:           1.0
+Module CRC:      $B93E7A     Good CRC
+Header parity:   $79D7       Good parity
+Edition:         $6          #6       
+Ty/La At/Rev     $B01        $C008    
+Permission:      $555        -----e-r-e-r-e-r
+Trap Hnlr, 68000 obj, Sharable, Sticky Module

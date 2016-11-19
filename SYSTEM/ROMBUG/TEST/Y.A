@@ -1,0 +1,309 @@
+type     set      (1<<8)+1 
+revs     set      (128<<8)+1
+
+
+ use ..\macro.d
+
+         psect    v,type,revs,2,256,main
+
+PORT	equ	$340010
+
+* 82C684 register offsets (from device BASE address)
+
+EXARIp set $0d input port
+
+* 82C684 register offset (for each SIDE of the device)
+
+EXARMode equ 0 mode register
+EXARBdSt equ 1 baudrate/status register
+
+EXAROffs equ (EXARBdSt-EXARMode)*8 subdevice addressing range
+EXARSubs equ 4 nr of subdevices in the chip
+
+* +----------------------------------------+
+* |Nod 122.0, Batt=3670mV, (no-ipl-string!)|
+* |930927 13:45 Laddar IDCsystem 1.894...  |
+* +----------------------------------------+
+
+main:
+	bsr  	cld
+	lea.l	nod(pc),a0
+	bsr.s  	emit			"Nod "
+	bsr	NetId			get master.slave id
+	move.l	d0,-(sp)		push slave number
+	move.l	d1,d0			d0 is master number
+	bsr  	i2ascii			write digits
+	moveq.l #'.',d0
+	bsr.s  	emitChar
+	move.l	(sp)+,d0		pop slave number
+	bsr  	i2ascii			write digits
+	lea.l	batt(pc),a0
+	bsr.s  	emit
+	bsr	getBatt
+	bsr  	i2ascii
+	lea.l	mV(pc),a0
+	bsr.s  	emit
+	bsr  	checkIpl
+	bcc.s	noIpl
+	lea.l	noipl(pc),a0
+	bsr.s  	emit
+noIpl
+	bsr  	carriageReturn
+*
+*	bsr  	getTime
+*	
+	bsr	currentTime
+*	lea.l	fake(pc),a0
+*	bsr	emit
+*	
+	lea.l	ladda(pc),a0
+	bsr.s  	emit
+	movea.l	#$3fffd8,a0
+	move.l	#4,d1
+lnex	move.b	(a0)+,d0
+	bsr.s  	emitChar
+	dbra	d1,lnex
+	lea.l	more(pc),a0
+	bsr.s	emit
+	moveq.l	#0,d1
+        os9	F$Exit
+
+
+emit	move.b	(a0)+,d0	get next char
+	beq.s	nej
+	lcdput
+	bra.s	emit
+nej	rts
+
+emitChar
+	lcdput
+	rts
+
+cld	lcdgo
+	rts
+
+checkIpl
+	movea.l #$0440,a0
+        cmpi.w  #$c0de,(a0)+
+        bne.s   setCy
+	cmpi.b	#$0d,(a0)
+	beq.s	setCy
+	rts			since most characters > $0d -> no carry
+setCy	ori	#Carry,ccr
+	rts
+
+carriageReturn
+	waitLcd
+	lcdctrl	#$c0
+	rts
+
+i2ascii
+	moveq	#0,d3
+         move.w   #1000,d1
+         bsr.s    tal
+         move.w   #100,d1
+         bsr.s    tal
+i02ascii
+         move.w   #10,d1
+         bsr.s    tal
+         move.w   #1,d1
+         moveq    #1,d3	       920513, telling we have started, if not before
+         bsr.s    tal
+	rts
+	 
+*
+*     d0	in argument to display
+*     d1        what exponential to display
+*     d2        temporary storage of figure
+*     d3        static flag, 1= we have started
+*     a0        temporary pointer to stack, where figure is temp. stored
+*
+tal      moveq    #0,d2		   write this figure, if needed
+         cmp.w    d1,d0
+         bcs.s    notyet
+         divu.w   d1,d0		   d0:= d0/d1
+         move.b   d0,d2		   get lower (16bits) == quotient
+         swap.w   d0               make lower 16bits == remainder
+         andi.l   #$ffff,d0
+         moveq    #1,d3	           flag, telling we have started
+*
+*        now, just write the figure in d2 and return
+*        
+notyet   tst.b    d3
+         beq.s    noprint
+         addi.b   #48,d2
+         move.b   d2,(a7)
+         move.l   d0,-(a7)
+	 move.b	  d2,d0
+	 bsr	  emitChar
+         move.l   (a7)+,d0
+noprint	 rts
+
+*
+* function: reads the dip-switch
+* returns   d0 slave node number, d1 master node number
+* destroys  d0,d1,a0
+*
+NetId move.l #PORT,d0 get device port
+ andi.b #256-EXARSubs*EXAROffs,d0 remove lsb bits
+ movea.l d0,a0 set pointer to the chip
+ move.b EXARIp(a0),d0 get input byte 1
+ move.b EXARIp+EXAROffs*2(a0),d1 get input byte 2
+ lsr.w #4,d0 shift DIP1-4 into b0..b3
+ andi.w #$000F,d0 keep b0..b3
+ btst #1,d1 is DIP10 set?
+ beq.s NetId1 no...
+ bset #9,d0 set b9
+NetId1 asl.w #1,d1 shift DIP5-9 into b4..b8
+ andi.w #$01F0,d1 keep b4..b8
+ or.w d1,d0 add bits to d0
+*  
+* added 921111, if bit9 replace with 0
+*
+ moveq.l #0,d1			default master 0
+ btst #9,d0
+ beq.s nomaster
+ move.l  d0,d1
+ moveq.l #0,d0			master if msb (b9) was set
+nomaster
+ rts
+
+*
+* function: reads the battery voltage
+* returns:  d0 in mV
+* destroys: d0,a0
+*
+qip1	equ	$34000d		input port 1
+qrop1	equ	$34000f		reset bit (high) in output port 1
+qsop1	equ	$34000e		set bit (low) in output port 1
+
+SDI	equ	$04
+SDI_V	equ	$02		bit 2 is $04
+SCLK	equ	$04
+SDO	equ	$08
+SSEL8	equ	$01
+
+setClkHi	macro
+	move.b	#SCLK,qrop1	set clock line high
+ endm
+
+setClkLo	macro
+	move.b	#SCLK,qsop1	set clock line low
+ endm
+
+setDataHi	macro
+	move.b	#SDO,qrop1	set data line high
+ endm
+
+setDataLo	macro
+	move.b	#SDO,qsop1	set data line low
+ endm
+
+getBatt
+	move.b	#SCLK,qsop1
+	move.b	#SSEL8,qsop1
+	move.b	#SDO,qrop1
+
+	move.l	#9,d1
+	moveq.l	#0,d0
+nxbit	rol.l	#1,d0
+	btst.b	#SDI_V,qip1
+	beq.s	not_set
+	ori.l	#1,d0
+not_set move.b	#SCLK,qrop1	set clock line high
+	move.b	#SCLK,qsop1	set clock line low
+	dbra	d1,nxbit
+	andi.l	#255,d0
+
+	move.b	#SSEL8,qrop1
+	mulu	#5000,d0
+	divu	#255,d0
+	rts
+
+currentTime
+	moveq.l	#0,d0
+	move.b	#5,d1 		year register
+	bsr 	Read3003
+	andi.w 	#$00FF,d0 	clear msbs
+	move.b	#1,d3
+	bsr	i02ascii
+	move.b 	#4,d1 		month register
+	moveq.l	#0,d0
+	bsr 	Read3003
+	move.b	#1,d3
+	bsr	i02ascii
+	move.b 	#3,d1 		day register
+	moveq.l	#0,d0
+	bsr.s 	Read3003
+	move.b	#1,d3
+	bsr	i02ascii
+	move.b	#' ',d0
+	bsr	emitChar
+
+	move.b 	#2,d1 		hour register
+	moveq.l	#0,d0
+	bsr.s 	Read3003
+	move.b	#0,d3
+	bsr	i02ascii
+	move.b	#':',d0
+	bsr	emitChar
+	move.b 	#1,d1 		minute register
+	moveq.l	#0,d0
+	bsr.s 	Read3003
+	move.b	#1,d3
+	bsr	i02ascii
+	rts
+
+*
+* Wait3003
+*   this subroutine must be called to
+*   check if an m3003 device is present
+*   if not an E$NoClk error code is returned
+*   Wait3003 will wait until the chip is
+*   ready for a read or write operation
+*
+Wait3003 movem.l d0-d1,-(sp) save callers registers
+ move.w #10,d1 nr of attempts to read rtc
+Wait3003a move.b $310000,d0 get rtc status (or bus data)
+ andi.b #$0F,d0 keep lsb nibble
+ beq.s Wait3003b ok to use rtc?
+ move.l #1,d0 nr of ticks
+ OS9 F$Sleep zzz...
+ sub.w #1,d1 subtract attempts
+ bne.s Wait3003a more?
+ move.w #E$NoClk,6(sp) set error msg
+ ori.b #Carry,ccr set carry
+Wait3003b movem.l (sp)+,d0-d1
+ rts
+
+*
+* Read3003
+*   subroutine to read any data register in
+*   the M3003 chip
+*
+* passed:  (d1.b) = register nr to read
+* returns: (d0.b) = decimal data 0-99
+*
+Read3003 bsr.s Wait3003 check if chip is ready
+ bcs.s Read3009 no chip?
+ move.b d1,$310000 write address register nr
+ move.b $310000,d0 get tens digit
+ andi.b #$0F,d0 keep lsb nibble
+ mulu #10,d0 make decimal nr
+ move.b $310000,d1 get ones digit
+ andi.b #$0F,d1 keep lsb nibble
+ add.b d1,d0 combine into decimal number
+ moveq #0,d1 no error
+Read3009 rts
+
+nod	dc.b	"Nod ",0
+batt	dc.b	", Batt=",0
+mV	dc.b	"mV, ",0
+*noipl	dc.b	"(no-ipl-string!)",0
+noipl	dc.b	"(Obs saknar ipl)",0
+ladda	dc.b	" Laddar IDCsystem ",0
+more	dc.b	"...",0
+fake	dc.b	"930927 13:45",0
+
+ ends
+

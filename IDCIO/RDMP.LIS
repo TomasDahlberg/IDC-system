@@ -1,0 +1,33 @@
+Static size =      0, Init size =      0 datamodule.r
+Static size =      0, Init size =      0 mstime.r
+Static size =    320, Init size =      0 pid.r
+Static size =      0, Init size =      0 redday.r
+Static size =      0, Init size =      0 traphand.r
+Static size =     18, Init size =      4 var.r
+Static size =      0, Init size =      0 findmeta.r
+Static size =      0, Init size =      0 dummy.r
+Static size =     4c, Init size =     58 trap_screen.r
+Static size =      0, Init size =      0 trapif.r
+Static size =      0, Init size =      0 disp.r
+Static size =      0, Init size =      0 rand.r
+Static size =      0, Init size =      0 counter.r
+Static size =     c6, Init size =     18 timer.r
+Static size =      0, Init size =      0 subrCaller.r
+Static size =    862, Init size =      0 runtime_scan.r
+Static size =      0, Init size =      0 kurvab.r
+Static size =     22, Init size =      8 tvpump.r
+Static size =      0, Init size =     30 enter.r
+Static size =     5a, Init size =     50 ent_cal.r
+Static size =      0, Init size =      0 week.r
+Static size =      4, Init size =      0 downCount.r
+Static size =      0, Init size =      c net.r
+Static size =      0, Init size =      4 callDbg.r
+Static size =     34, Init size =      8 alarm.r
+Static size =     54, Init size =      4 runtime_alarm.r
+Static size =     40, Init size =      4 createDM.r
+Static size =      0, Init size =      8 debugskrift.r
+Static size =     40, Init size =     40 incdec.r
+Static size =      0, Init size =      0 initDM.r
+=====================================
+Total:
+Static size =    e34, Init size =    164

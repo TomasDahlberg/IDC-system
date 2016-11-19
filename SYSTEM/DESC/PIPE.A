@@ -1,0 +1,77 @@
+
+TypeLang  set     $F00
+Attr_Rev  set     $8000
+Edition   set     2
+
+          psect   term,TypeLang,Attr_Rev,Edition,0,0
+
+Port      set     $00000000		0 = port 0, 8 = port 1, 10 = port 2
+Vector    set     $00
+IRQLevel  set     $00
+Priority  set     $00
+Mode      set     $a7
+DevCon	  set	  0
+
+main:
+          dc.l    Port
+          dc.b    Vector
+          dc.b    IRQLevel
+          dc.b    Priority
+          dc.b    Mode
+
+          dc.w    FileMgr
+          dc.w    DevDrv
+          dc.w    DevCon
+          dc.w    0,0,0,0
+          dc.w    OptLen
+
+PD_DTP    set     0
+PD_UPC    set     0
+PD_BSO    set     1
+PD_DLO    set     0
+PD_EKO    set     1
+PD_ALF    set     1
+PD_NUL    set     0
+PD_PAU    set     0
+
+PD_PAG    set     24            Page length
+PD_BSP    set     8             Backspace "input" character
+PD_DEL    set     24            Delete line character
+PD_EOR    set     13            End of record character
+
+PD_EOF    set     27
+PD_RPR    set     4
+PD_DUP    set     1
+PD_PSC    set     23
+PD_INT    set     3
+PD_QUT    set     2
+PD_BSE    set     8
+PD_OVF    set     7
+PD_PAR    set     0
+PD_BAU    set     $0e
+
+PD_XON    set     17
+PD_XOFF   set     19
+PD_Tab    set     9
+PD_Tabs   set     4
+
+
+optField
+          dc.b    2
+          dc.b    0
+          dc.b    0
+          dc.b    0
+          dc.b    0
+          dc.b    0
+
+
+OptLen    equ     *-optField
+
+          
+FileMgr   dc.b    "PipeMan",0
+DevDrv    dc.b    "Null",0,0
+
+PD_D2P    
+* dc.b    "n196",0
+
+          ends

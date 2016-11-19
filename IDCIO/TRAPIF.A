@@ -1,0 +1,178 @@
+* trapif.a  1993-08-30 TD,  version 1.35 */
+*
+* This file contains proprietary information of IVT Electronic AB.
+* Copying or reproduction without prior written approval is prohibited.
+*
+* This file is furnished under a license agreement or nondisclosure
+* agreement. The software may be used or copied only in accordance 
+* with the terms of the agreement.
+*
+* In no event will IVT Electronic AB, be liable for any lost revenue or
+* profits or other special, indirect and consequential damages, even if
+* IVT has been advised of the possibility of such damages.
+*
+* IVT Electronic AB
+* Box 996
+* 191 29 Sollentuna
+* Sweden
+*
+
+*
+* trapif.a
+* Copyright (C) 1991-1993 IVT Electronic AB.
+*
+
+
+          nam      Trapif
+          ttl      trap interface, c-callable routines translated to traps
+Prgrm     equ      1
+Objct     equ      1
+ReEnt     equ      128
+
+Edition   equ      1
+Typ_Lang  equ      (Prgrm<<8)+Objct
+Attr_Rev  equ      (ReEnt<<8)+0
+          psect    trapif,0,0,Edition,0,0,0
+
+TrapNum   equ      6
+TrapName  dc.b     "idcio",0
+
+initidcio: movem.l  d1/a0-a2,-(a7)
+          moveq    #TrapNum,d0
+          moveq    #0,d1
+          lea      TrapName(pc),a0
+          os9      F$TLink
+          bcs.s    exiterror
+          moveq    #0,d1                  changed from d0, 930419
+exiterror move.l   d1,d0                  added 930419
+          movem.l  (a7)+,d1/a0-a2
+          rts
+
+timerLeft:      tcall    TrapNum,0
+enter_calendar: tcall    TrapNum,1
+calActiveIn:    tcall    TrapNum,2
+PULS_2:         tcall    TrapNum,3
+netClearAlarm:  tcall    TrapNum,4
+_markAlarm:     tcall    TrapNum,5
+_unmarkAlarm:   tcall    TrapNum,6
+_packAlarms:    tcall    TrapNum,7
+pid:	        tcall    TrapNum,8
+Ni1000: 	tcall    TrapNum,9
+ANAIN_1:	tcall    TrapNum,10
+ANAOUT_1:       tcall    TrapNum,11
+DIGIN_1:        tcall    TrapNum,12
+DIGOUT_1:	tcall    TrapNum,13
+color:	        tcall    TrapNum,14
+checkLevel:     tcall    TrapNum,15
+checkGlitchRaise:
+          	tcall    TrapNum,16
+checkGlitchFall:
+          	tcall    TrapNum,17
+_initScan:     	tcall    TrapNum,18              * prev. checkCalendarRaise:
+_initMain:     	tcall    TrapNum,19              * prev. checkCalendarFall:
+deltatime:    	tcall    TrapNum,20
+colour_of_day: 	tcall    TrapNum,21
+linkDataModule:	tcall    TrapNum,22
+createDataModule:
+          	tcall    TrapNum,23
+unlinkDataModule:
+          	tcall    TrapNum,24
+metaValue:      tcall    TrapNum,25
+metaId:         tcall    TrapNum,26
+metaType:       tcall    TrapNum,27
+metaLock:       tcall    TrapNum,28
+metaName:       tcall    TrapNum,29
+
+enter:          tcall    TrapNum,31
+editVariable:   tcall    TrapNum,32
+edit:           tcall    TrapNum,33
+showVariables:  tcall    TrapNum,34
+swdctime:       tcall    TrapNum,35
+xxxswdctime:    tcall    TrapNum,36
+readAlarm:      tcall    TrapNum,37
+rand:           tcall    TrapNum,38
+srand:          tcall    TrapNum,39
+COUNTER_1:      rts
+
+netActiveABCD:  tcall    TrapNum,40
+password:       tcall    TrapNum,41
+getLevel:       tcall    TrapNum,42
+timerInit:      tcall    TrapNum,43
+timerReady:     tcall    TrapNum,44
+optoPower:      tcall    TrapNum,45
+battVoltage:    tcall    TrapNum,46
+Pt1000:         tcall    TrapNum,47
+count:          tcall    TrapNum,48
+Ni1000LG:       tcall    TrapNum,49
+count_1:        rts
+netConfirmedABCD:
+                tcall    TrapNum,50
+count_2:        tcall    TrapNum,51
+set_time:       tcall    TrapNum,52
+Ni1000DIN:      tcall    TrapNum,53
+TEMP_1:         tcall    TrapNum,54
+getRelTime:     tcall    TrapNum,55
+setTime:        tcall    TrapNum,56
+Pt100_150:      tcall    TrapNum,57
+Pt100_500:      tcall    TrapNum,58
+battLow:        tcall    TrapNum,59
+kurva:          tcall    TrapNum,60
+tvpump:         tcall    TrapNum,61
+metaSize:       tcall    TrapNum,62
+account:        tcall    TrapNum,63
+alarm_active:   tcall    TrapNum,64
+PULS_1:         tcall    TrapNum,65
+getTime:        tcall    TrapNum,66
+enter_kurva:    tcall    TrapNum,67
+
+getExtern:      tcall    TrapNum,68
+putExtern:      tcall    TrapNum,69
+netSetHost:        tcall    TrapNum,70
+
+metaRemote:     tcall    TrapNum,71
+metaRemoteData: tcall    TrapNum,72
+
+timerCancel:    tcall    TrapNum,73
+isTimerInit:    tcall    TrapNum,74
+
+netGetNoOfAlarms:  tcall    TrapNum,75
+netGetAlarmText:   tcall    TrapNum,76
+netConfirmAlarm:   tcall    TrapNum,77
+netGetIdxVar:      tcall    TrapNum,78
+netPutIdxVar:      tcall    TrapNum,79
+netGetUpdated:     tcall    TrapNum,80
+netSetRemote:      tcall    TrapNum,81
+checkCalendarLevel:
+                tcall    TrapNum,82
+netAckAlarm:    tcall    TrapNum,83
+netGetCal:      tcall    TrapNum,84
+netSetCal:      tcall    TrapNum,85
+
+netGetNIdxVar:      tcall    TrapNum,86
+
+metaRemoteNode: tcall    TrapNum,87
+callDbg:        tcall    TrapNum,88
+_clearContext:  tcall    TrapNum,89
+_alarmDisplay:  tcall    TrapNum,90
+_closeConnection:  tcall    TrapNum,91
+metaAlias:      tcall    TrapNum,92
+metaRemoteId:   tcall    TrapNum,93
+incDec:         tcall    TrapNum,94
+checkAccess:    tcall    TrapNum,95
+Staefa_PTC_150: tcall    TrapNum,96
+firstFreeTimer: tcall    TrapNum,97
+filterFkn:      tcall    TrapNum,98
+netRebootNode:  tcall    TrapNum,99
+netGetMem:      tcall    TrapNum,100
+netPutMem:      tcall    TrapNum,101
+netNew:         tcall    TrapNum,102
+_initSubrFcn:   tcall    TrapNum,103
+startDownCounter  tcall  TrapNum,104
+alarmStatus:    tcall    TrapNum,105
+Freq:           tcall    TrapNum,106
+res2PT100:      tcall    TrapNum,107
+RES_280:        tcall    TrapNum,108
+
+           ends
+
+

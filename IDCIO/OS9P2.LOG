@@ -1,0 +1,87 @@
+
+
+Article 4355 (3 more) in comp.os.os9:
+From: dibble@microware.com (Peter Dibble)
+
+Subject: Re: Help needed with memory fragmentation problem
+Nntp-Posting-Host: snake
+Organization: Microware Systems Corp., Des Moines, Iowa
+Date: Mon, 11 Jul 1994 22:14:52 GMT
+Lines: 58
+
+--MORE--(24%)In article <2vrqao$3l1@tdc.dircon.co.uk> digbyt@tdc.dircon.co.uk (Digby Tarvin) 
+writes:
+>I am looking for any suggestions that may help with thre following problem:
+>
+>A client using an MVME167 with 32Mb of memory as an OS-9 development system
+>(OS-9 V2.4) with 6-10 developers. Currently the system is only lasting a few
+>hours before needing to be re-booted to recover from memory fragmentation
+>that prevents large compilations. 
+>
+>The obvious course of action that springs to mind is to increase the
+>'System Minimum Allocatable Block Size' - D_BlkSiz.
+>
+>DigbyT
+
+First, I'd look hard at what's causing the fragmentation.   I've seen
+that kind of load on a system with much less memory with no fragmentation
+problems.  Is it possible that there's a memory leak somewhere?
+
+'nuff of that.  Here's a P2 module that I use to change the memory
+block sizes.
+
+========
+ nam OS9P2
+--MORE--(62%) Edition equ 1 current edition number
+********************
+* Module Header
+*
+  
+  Typ_Lang set (Systm<<8)+Objct system module, object code
+  Attr_Rev set ((ReEnt+SupStat)<<8)+0 supervisor state, sharable
+   
+  psect OS9P2,Typ_Lang,Attr_Rev,Edition,0,Init
+     
+  use defsfile
+  pag
+********************
+* Entry Point
+*
+* Passed:  (a3) = vsect data ptr
+*          (a6) = system global data ptr
+*          (sp) = (system) stack ptr
+*
+* Returns:  nothing 
+* 
+* Error Return:  d1.w = error code
+*                (cc) = carry set
+--MORE--(85%)*
+* Destroys:  only d1 and cc may be modified.
+*
+Init: 
+ move.l #NEW_BLKSIZ,D_BlkSiz(a6) System min block
+ move.l #NEW_MINBLK,D_MinBlk(a6)  Process min block
+*  If NEW_MINBLK has its high bit set, clear carry before returning
+ rts return status  
+ ends
+
+-- 
+============================
+Disclaimer:  Not speaking for Microware.
+End of article 4355 (of 4358)--what next? [npq] 
+
+Article 4356 (2 more) in comp.os.os9:
+From: norbert@veilchen.informatik.rwth-aachen.de (Norbert Berzen)
+
+Subject: Full MMU support for OS-9/68k
+Date: 12 Jul 1994 07:43:54 GMT
+Organization: Rechnerbetrieb Informatik - RWTH Aachen
+Lines: 18
+NNTP-Posting-Host: veilchen.informatik.rwth-aachen.de
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Summary: Why does OS-9 not have full MMU support
+Keywords: MMU OS-9 SSM
+
+--MORE--(51%)

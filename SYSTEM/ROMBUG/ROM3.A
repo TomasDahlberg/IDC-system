@@ -1,0 +1,453 @@
+ nam IO68681
+ ttl Rudimentary I/O Routines for MC68681 Serial Device
+
+* Copyright 1984, 1986, 1987, 1988, 1989 by Microware Systems Corporation
+* Reproduced Under License
+
+* This source code is the proprietary confidential property of
+* Microware Systems Corporation, and is provided to licensee
+* solely for documentation and educational purposes. Reproduction,
+* publication, or distribution in any form to any party other than
+* the licensee is strictly prohibited.
+*
+
+********************
+* IO68681:  Rudimentary I/O routines for MC68681 serial device.
+*
+* This code provides basic i/o support for both the Console
+* port and the Communications port.
+*
+* WARNING:  the standard version of this code assumes that the
+*           Console device is the A-side chip port, and the
+*           Communication device is the B-side port of the
+*           SAME chip.  When this situation does not apply,
+*           you need to implement system specific conditionals
+*           via "ifdef" statements (see PACERMOS for example coding).
+*
+* Other Assumptions:
+*
+* 1.  For all versions, the IMR shadow image for the CONS Port is
+*     assumed to be held in the first "pair" of bytes, starting at the
+*     OEM global area D_Start.
+*
+* 2.  For the PACER system, the IMR shadow image for the COMM port
+*     is expected to reside in the second "pair" of OEM global bytes.
+*
+
+
+********************
+* Edition History
+*
+*  #    date     Comments                                   who
+* -- ---------  ------------------------------------------  ---
+*  01 08-24-84  Change to support 7100 cpu with 68681       jlr
+*  02 07-25-86  Added code for download capabilities        djl
+*  03 01-13-87  Fixed OutChar to not destroy d1             jpj
+*  04 87/09/12  made XOFF characters be recognized, made    wwb
+*               all registers be saved, made IMR retain
+*               value when system running, rearranged
+*               routines for clarity, fixed IMR offset value.
+*  05 87/09/12  added delay macro for chip accessing        wwb
+*  06 87/09/15  made XOFF flow control support work         wwb
+*  07 87/10/15  modified for PACER usage                    wwb
+*  08 87/12/17  changed PACER usage from CPUType to ifdef.  wwb
+*  09 88/01/05  fixed deinit routines so that IMR updated   wwb
+*               only once when comm port is same device
+*               as console port.
+*  10 88/02/22  made register offsets conditional for use 
+*               with Motorola VME140 cpu.                   djl
+*  11 88/03/17  fixed problem with ConsDeIn, PortDeIn       wwb
+*               (checking wrong location for M$ID12).
+*               fixed problem with OPR setting for PACER.   wwb
+*  12 89/01/12  fixed 4k hard coded reference in ConsDeIn	jal
+*				disabled upper casing when using ROMBUG		jal
+*               <<<---- OS-9/68000 V2.3 Release ---->>>
+*
+edition set 12
+
+ psect iomat_a,0,0,edition,0,0
+
+ use defsfile
+
+ use ..\macros\sysglob.m
+
+ pag
+********************
+* Definitions
+*
+
+* 68681 register offset (from device BASE address)
+
+
+ ifndef VME140
+
+*Definitions for conventional MC68681 register layout
+*
+MPSModeA equ $00 68681 Mode register A
+MPSBdStA equ $02 Status/Baudrate channel A
+MPSDataA equ $06 68681 Data register A
+MPSCntlA equ $04 68681 Control register A
+
+MPSModeB equ $10 68681 Mode register B
+MPSBdStB equ $12 68681 Status/Baudrate channel B
+MPSDataB equ $16 68681 Data register B
+MPSCntlB equ $14 68681 Control register B
+
+MPSImr set $0a 68681 Interrupt mask/status register (from device BASE)
+ ifdef PACERMOS
+MPSImr set MPSImr-$10 PACERMOS uses B-side ports
+ endc PACERMOS
+
+MPSOpcr set $1a output port configuration register
+MPSOprSet set $1c output port register (set command)
+MPSOprRes set $1e output port register (reset command)
+ ifdef PACERMOS
+MPSOpcr set MPSOpcr-$10 PACERMOS uses B-side ports
+MPSOprSet set MPSOprSet-$10
+MPSOprRes set MPSOprRes-$10
+ endc PACERMOS
+
+* 68681 register offset (for each SIDE of the device)
+* note that these offsets assume that the device registers
+* are accessible "every other byte"
+
+MPSData equ 6
+MPSCntl equ 4
+MPSMode equ 0
+MPSBdSt equ 2
+
+ else
+
+*Definitions for VME140 MC68681 register layout
+*
+MPSModeA equ $00 68681 Mode register A
+MPSBdStA equ $01 Status/Baudrate channel A
+MPSDataA equ $03 68681 Data register A
+MPSCntlA equ $02 68681 Control register A
+
+MPSModeB equ $08 68681 Mode register B
+MPSBdStB equ $09 68681 Status/Baudrate channel B
+MPSDataB equ $0b 68681 Data register B
+MPSCntlB equ $0a 68681 Control register B
+
+MPSImr set $05 68681 Interrupt mask/status register (from device BASE)
+
+MPSOpcr set $0d output port configuration register
+MPSOprSet set $0e output port register (set command)
+MPSOprRes set $0f output port register (reset command)
+
+* 68681 register offset (for each SIDE of the device)
+
+MPSData equ 3
+MPSCntl equ 2
+MPSMode equ 0
+MPSBdSt equ 1
+ 
+ endc
+
+*******************
+* ACIA parameters
+*
+Pareven equ $00 parity even
+Bit7 equ $02 seven bits per char
+Paroff equ $10 parity off
+Bit8 equ $3 number of bits per char
+Stop1 equ $7 number of stop bits
+Br96 equ $bb baud rate 9600
+Ench equ $5 enable tx and rec
+
+
+********************
+
+* DELAY: macro to create delay on chip accessing
+*
+DELAY macro
+ exg d0,d1 switch regs
+ exg d0,d1 ..and restore
+ endm
+
+ page
+
+***************
+* Subroutine ConsInit
+*   Initialize Console Port for non-interrupt I/O
+
+* Passed: none
+* Returns: none
+* Destoys: cc
+
+ConsInit:
+ConsSet:
+ move.b d0,$348000
+ movem.l d1/a3,-(sp) save regs
+ movea.l ConsPort(pc),a3 get base address
+ move.b #0,MPSImr(a3) disable ALL interrupts
+ DELAY delay a while
+ ifdef PACERMOS
+ move.b #0,MPSOpcr(a3) set output port configuration
+ DELAY delay a while
+ move.b #$ff,MPSOprSet(a3) set all outputs LOW
+ endc PACERMOS
+ConsSet1 move.b #$10,MPSCntl(a3) reset to mode reg 1
+ DELAY delay a while
+ ifdef PACERMOS
+ move.b #Pareven+Bit7,MPSMode(a3) set parity even, 7 bits
+ else
+ move.b #Paroff+Bit8,MPSMode(a3) set parity off and 8 bits
+ endc PACERMOS
+ DELAY delay a while
+ move.b #Stop1,MPSMode(a3) set one stop bit
+ DELAY delay a while
+ move.b #Br96,MPSBdSt(a3) set 9600 baud
+ DELAY delay a while
+ move.b #Ench,MPSCntl(a3) enable xmit and rec
+ moveq #0,d1 clear carry (no errors)
+ movem.l (sp)+,d1/a3 restore regs
+ rts
+ 
+**************
+* Subroutine PortInit
+*   Inititialize Comm Port for non-interrupt I/O
+
+* Passed: none
+* Returns: none
+* Destroys: cc
+
+PortInit:
+ movem.l d1/a3,-(sp) save regs
+ movea.l CommPort(pc),a3 get comm port base address
+ ifdef PACERMOS
+ move.b #0,MPSImr(a3) disable ALL interrupts
+ DELAY delay a while
+ move.b #0,MPSOpcr(a3) set output port configuration
+ DELAY delay a while
+ move.b #$ff,MPSOprSet(a3) set all outputs LOW
+ endc PACERMOS
+ bra.s ConsSet1 do the initialization
+ 
+***************
+* Subroutine InChar
+*   Return one (upper case) byte of input from the Acia
+
+* Passed: none
+* Returns: (d0.b)=input char
+* Destroys: cc
+
+InCharCR move.b #$0D,d0 return C$CR to debugger
+ WRITELED #$FF
+InCharR addq.b #1,$404 bump flag count
+ rts
+InCharG move.b #$47,d0 return G to debugger
+ bra InCharR
+InChar: tst.b $405 is autoboot off?
+ beq.s InCharS yes..
+ move.b $404,d0 is directly after reset?
+ beq.s InCharG
+ cmpi.b #1,d0 ??
+ beq.s InCharCR
+ bra.s InCharS0
+InCharS
+ WRITELED #$FF
+InCharS0 movem.l d1/a3,-(sp) save reg
+ move sr,-(sp)
+ ori #IntMask,sr mask irqs to level 7
+ movea.l ConsPort(pc),a3
+* move.l a3,d1 get base address of port
+* andi.b #$F1,d1
+InChar10 move.b d0,$348000
+ btst #0,MPSBdSt(a3) receive char available ?
+ DELAY delay a while
+ beq.s InChar10 ..no; wait for one
+ move.b MPSData(a3),d0 get data
+* movea.l d1,a3 point to base address
+* move.b #EndIRQ,MPSCntlA(a3) clear irq
+ move (sp)+,sr
+ movem.l (sp)+,d1/a3 restore reg
+ bsr.s OutChar echo the character
+ ifndef ROMBUG
+InChar30 cmp.b #'a',d0 lower case?
+ blo.s InChar90 exit if not
+ cmp.b #'z',d0 lower case?
+ bhi.s InChar90 exit if not
+ subi.b #('a'-'A'),d0
+ else
+InChar30
+ endc
+InChar90 rts
+
+**************
+* Subroutine InChCheck
+*   Check console for input char
+
+* Passed: none
+* Returns: (d0.b) = -1 if no char, else char available
+
+InChChek: move.l a3,-(sp) save reg
+ move.b d0,$348000
+ movea.l ConsPort(pc),a3 get the port address
+Check10 btst #0,MPSBdSt(a3) is there a character ?
+ bne.s Check20 yes, get the char and return
+ moveq.l #-1,d0 flag no character
+ bra.s Check30 leave
+ 
+*Here if character available
+*
+Check20 moveq.l #0,d0 clear the reg
+ move.b MPSData(a3),d0 get data
+Check30 move.l (sp)+,a3 get back the reg
+ rts
+
+
+*************
+* Subroutine InPort 
+*   Input char on aux port
+
+* Passed: none
+* Returns: (d0.b) = input char
+
+InPort: move.l a3,-(sp) save reg
+ move sr,-(sp) save the irq masks
+ ori #IntMask,sr mask irq's to level 7
+ movea.l CommPort(pc),a3 get the port address
+InPort10 move.b d0,$348000
+ btst #0,MPSBdSt(a3) is there a char ready ?
+ DELAY delay a while
+ beq.s InPort10 no, wait
+ move.b MPSData(a3),d0 get the character
+ move (sp)+,sr get back the status reg
+ movea.l (sp)+,a3 get back the reg
+ bra.s InChar30 handle case
+ 
+ page
+***************
+* Subroutine OutChar
+*   Output one character to Acia
+
+* Passed: (d0.b)=char to write
+* Returns: none
+
+OutChar: move.b d0,$348000
+ tst.b $405 is autoboot off?
+ beq.s OutCharS yes..
+ cmpi.b #2,$404 booting?
+ blo.s OutCharQ yes.. no display
+OutCharS
+ cmp.b #C$CR,d0 output CR ?
+ bne.s OutChar0 branch if not
+ move.l d0,-(sp) save register
+ bsr.s OutChar0 output CR
+ moveq.l #C$LF,d0 insert LF
+ bsr.s OutChar0
+ move.l (sp)+,d0 retrieve register
+OutCharQ
+ rts
+
+OutChar0 equ *
+ movem.l d1/a3,-(sp)
+ move sr,-(sp) save irq status
+ ori #IntMask,sr mask irqs to level 7
+ movea.l ConsPort(pc),a3
+OutChar1 move.b d0,$348000
+ btst.b #0,MPSBdSt(a3) is the receiver ready?
+ beq.s OC10 if no, no XOFF is waiting
+ cmpi.b #C$XOff,MPSData(a3) was it an X-OFF?
+ bne.s OC10 if no, go send character
+
+* loop, waiting for non-X-OFF character
+
+OC05 move.b d0,$348000
+ btst.b #0,MPSBdSt(a3) is the receiver ready?
+ DELAY a while
+ beq.s OC05 if no, loop until new character
+ cmpi.b #C$XOff,MPSData(a3) non X-OFF character rec'd ?
+ beq.s OC05 if not, loop until so
+OC10 move.b d0,MPSData(a3) write char
+ DELAY delay a while
+
+OutChar2 move.b d0,$348000
+ btst #2,MPSBdSt(a3) acia done?
+ DELAY delay a while
+ beq.s OutChar2 branch if not
+* move.l a3,d1
+* andi.b #$F1,d1 get base address of port
+* movea.l d1,a3
+* move.b #EndIRQ,MPSCntlA(a3) clear irqs
+ move.w #$200,d1 delay
+OutChar9 nop
+ dbra d1,OutChar9
+ move (sp)+,sr restore sr
+ movem.l (sp)+,d1/a3 restore regs
+ rts return
+
+
+**************
+* Subroutine OutPort
+*   Output a character on auxillary port
+
+* Passed: (d0.b) = char to be output
+* Returns: none
+
+OutPort: movem.l d1/a3,-(sp) save reg
+ move.b d0,$348000
+ move.w sr,-(sp) save the irq mask state
+ ori #IntMask,sr mask interrupts
+ movea.l CommPort(pc),a3 get the port address
+ bra.s OutChar1 now do the output
+ 
+
+*************
+* Subroutine ChekPort
+*   Check console for input char
+
+* Passed: none
+* Returns: (d0.l) zero if no char, non-zero if char available
+
+ChekPort: move.l a3,-(sp) save reg
+ move.b d0,$348000
+ movea.l CommPort(pc),a3 get the port address
+ bra Check10 finish the check
+ 
+*************
+* Subroutine OutRaw 
+*   Output one char
+
+* Passed: (d0.b) = char to write
+* Returns: none
+
+OutRaw: move.l a3,-(sp) save reg
+ movea.l ConsPort(pc),a3 get the cons address
+OutRaw1 move.b d0,$348000
+ btst #2,MPSBdSt(a3) acia ready for a char ?
+ DELAY delay a while
+ beq.s OutRaw1 no, wait
+ move.b d0,MPSData(a3) send the character
+ movea.l (sp)+,a3 get back the reg
+ rts
+
+***************
+* PortDeInit and Console DeInit are needed for the newest debug
+*
+ConsDeIn:
+PortDeIn:
+ move.w sr,-(sp) save sr
+ move.b d0,$348000
+ ori.w #IntMask,sr mask all interrupts
+ movem.l a0/a3,-(sp) save regs
+ sysglob a0
+ cmpi.w #M$ID12,(a0) has the system been started ?
+ bne.s DeInitXt ..no; then no IMR to restore
+ movea.l ConsPort(pc),a3 get address of console port
+ move.b #42,MPSImr(a3) restore IMR value from driver
+ ifdef PACERMOS
+
+* restore "2nd physical" device's IMR also.
+*
+ movea.l CommPort(pc),a3 get address of communication port
+ move.b D_Start+2(a0),MPSImr(a3) restore IMR value from driver
+ endc PACERMOS
+DeInitXt movem.l (sp)+,a0/a3 restore regs
+ move.w (sp)+,sr restore sr
+ rts
+
+ ends
+

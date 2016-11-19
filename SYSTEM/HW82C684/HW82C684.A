@@ -1,0 +1,1053 @@
+*
+* File:           sc82c684.a
+* Last modified:  93-11-17
+*
+Edition equ 15 current Edition number
+Revision equ 1 current revision
+
+*
+* Acia-device driver for XR82C684 quart devices
+* This driver was written completely from scratch
+* for the DT/08 system since the portpak supplied
+* drivers for MC68681 contained several severe
+* bugs and could not be used at all.
+*
+* This driver uses a shared memory area for shadow registers
+* in the OEM-global area, this means that it could
+* collide with some other manufacturers use of those
+* bytes. The register number is programmable in the first
+* byte of the device descriptors DevCon area. It should
+* be selected to a value different from what other drivers
+* use.
+*
+* This driver improves upon the normal os9 practice of
+* masking device interrupts while it is updating buffer
+* values, flags etc. This removes about 100 clock cycles
+* of overhead from each interrupt handled by this driver!!!
+* This is quite an improvement over the Microware supplied
+* drivers who program the SR-registers interrupt level bits
+* each time a shared register is to be updated.
+*
+* This driver does not suffer from deadlocks or overwriting
+* previous information since all access to shared values are
+* made by single instructions like clr, addq etc.
+*
+*  Ed.           History:
+* --------------------------------------------------------
+*  1. 90-10-11   first polled version                    C.O.
+*  2. 90-10-14   first interrupt driven version          C.O.
+*                support for 2 of the 4 subdevices
+*  3. 90-10-15   after a LONG hack the first production  C.O.
+*                talked to us and was delivered in the
+*                morning. Support for all 4 subdevices
+*                and the ticker device. The clock module
+*                is now trivial since its interrupt
+*                handler resides in this driver.
+*  4. 90-10-17   added network support for COLNET        C.O.
+*                also made it possible to use
+*                chips with more than 4 subdevices.
+*                address layout can now be on byte or
+*                word boundaries.
+*  5. 90-10-20   added SS_SSig and SS_Relea facility     C.O.
+*                to send signals to processes when
+*                data becomes available on the port.
+*  6. 90-10-20   added mode control for setting of baud  C.O.
+*                and parity with TMODE, the multidrop
+*                network can now be selected through
+*                the parity code on any port.
+*  7. 90-10-25   added shared shadow register support,   C.O.
+*                the method used is much faster than
+*                Microwares and does not need to disable
+*                the interrupts while updating the shared
+*                registers. It still uses the same D_Start
+*                area reserved for it in the kernels dataarea.
+*                The byte used is given in the first byte
+*                in the DevCon area of the device descriptor.
+*                also changed the F$IRQ to setup different
+*                entry points for the "A" and "B" sides
+*                of the device, this saves a few clockcycles
+*                on every input interrupt.
+*  8. 90-10-25   added output buffer flow-control.       C.O.
+*                the versions 1-7 have had an easy time only
+*                supporting one byte output at a time. This
+*                edition is fully interrupt driven for
+*                output transfers as well.
+*  9. 90-11-11   added tx-interrupt facility, driver is  C.O.
+*                now fully interrupt driven. Still no
+*                need to mask interrupts during change
+*                of states, OutHalt and InHalt are now
+*                properly handled at 10% and 90% buffer
+*                levels
+*  10. 90-11-12  Fixed problem with SS_Opt for other     C.O.
+*                ports than /term, updated descriptors
+*                for t1,t2,t3. Baudrate can be different
+*                for all ports
+*  11. 90-11-18  Fixed problem with SS_Opt for setting   C.O.
+*                other parity modes than NO PARITY.
+*                Now supprots ODD, EVEN, NONE and MULTI.
+*                Word length can be 5, 6, 7 or 8 bits and
+*                stopbits can be 1, 1.5 or 2. All can be
+*                set by tmode.
+*  12. 91-01-01  Cleaned up the code and added comments, C.O.
+*                this is no longer a test version. A
+*                module load facility has also been
+*                included.
+*  13. 91-01-07  Fixed buffer 90% full calculation error. D.A.
+*                It had gone undiscovered for a while that
+*                it was set to 110%.
+*  14. 91-01-07  Rewrote flowcontrol subroutines to use  C.O.
+*                an action flag instead of mixing bits in
+*                the ascii code. Also set the flag testing
+*                sequence correctly so that interrupts doesnt
+*                disturb things. Changed the buffer size
+*                to 1K.
+*  15. 93-11-17  Added no-check control for parity errors in IrqInA
+*		 No-check is enabled with bit 7 in parity byte
+*		 All it does is to skip parity errors from uart
+*		 
+Typ_Lang set (Drivr<<8)+Objct
+Att_Revs set ((ReEnt+SupStat)<<8)+Revision
+ psect AciaDriv,Typ_Lang,Att_Revs,Edition,0,AciaEnt
+
+*
+* Define buffer sizes
+*
+InSize set 1024 input buffer size
+OutSize set 256 output buffer size
+FrmSize set 32 default frame size
+
+*
+* Define flowcontrol limits
+*
+InLvl10 set InSize/10 input flowcontrol 10% limit
+InLvl90 set (InSize*9)/10 input flowcontrol 90% limit
+OutLvl10 set OutSize/10 output flowcontrol 10% limit
+
+*
+* Device static storage
+*
+ vsect
+Shadow ds.l 1 pointer to shadow register
+InRead ds.l 1 input-buffer read pointer
+InWrite ds.l 1 input-buffer write pointer
+InEnd ds.l 1 input-buffer end pointer
+OutRead ds.l 1 output-buffer read pointer
+OutWrite ds.l 1 output-buffer write pointer
+OutEnd ds.l 1 output-buffer end pointer
+ModLoad ds.l 1 module load pointer
+InCount ds.w 1 input-buffer level
+OutCount ds.w 1 output-buffer level
+IRQMask ds.w 1 device irq level mask
+SigPrc ds.w 3 values for SS_SSig (pid, signal, path)
+Station ds.w 1 netnode station id code
+Parity ds.b 1 parity code value
+BaudRate ds.b 1 baudrate code value
+IrqFlags ds.b 1 enabled irqs for this device
+Action ds.b 1 flag for flowcontrol (0= inactive)
+InHalt ds.b 1 input halted state
+OutHalt ds.b 1 output halted state
+InBuf ds.b InSize input data buffer
+OutBuf ds.b OutSize output data buffer
+RTSmode	ds.b	1	RxRTS handshake mode
+RTSstate ds.b	1	RxRTS current state
+TXmode	ds.b	1	Tx handshake mode
+ ends
+
+ ifdef HWSHAKE
+RxDefault equ RxRTS RxRTS control enabled
+TxDefault equ TxCTS TxCTS control enabled
+ else
+RxDefault equ 0 no RxRTS control
+TxDefault equ 0 no TxCTS control
+ endc HWSHAKE
+
+*
+* Definitions
+*
+
+* 82C684 register offsets (from device BASE address)
+
+MPSACR set $04 68681 auxilliary control register
+MPSImr set $05 68681 Interrupt mask/status register (from device BASE)
+MPSCTUR set $06 68681 counter/timer msb register
+MPSCTLR set $07 68681 counter/timer lsb register
+
+MPSOpcr set $0d output port configuration register
+MPSIp set $0d input port
+MPSOprSet set $0e output port register (set command)
+MPSOprRes set $0f output port register (reset command)
+
+* 82C684 register offset (for each SIDE of the device)
+
+MPSData equ 3 data register
+MPSCntl equ 2 control register
+MPSMode equ 0 mode register
+MPSBdSt equ 1 baudrate/status register
+ 
+ABbit equ 3 device "side" select bit
+MPSOffs equ (MPSBdSt-MPSMode)*8 subdevice addressing range
+MPSSubs equ 4 nr of subdevices in the chip
+MPSXtal equ MPSOffs*2+MPSCntl reg for xtal 1:1 command
+MPSImrB equ MPSImr-MPSOffs offset to Imr from B-side
+Ench equ $5 enable for tx and rx
+
+*
+* Interrupt flag bits
+*
+TxBitA equ 0 bitnr in Imr for tx-irq A
+RxBitA equ 1 bitnr in Imr for rx-irq A
+TmBitA equ 3 bitnr in Imr for timer
+TxBitB equ 4 bitnr in Imr for tx-irq B
+RxBitB equ 5 bitnr in Imr for rx-irq B
+
+* MPSMode Registers
+
+RxRTS equ %10000000 MR1 - rx rts flow control enable
+TxRTS equ %00100000 MR2 - tx rts flow control enable
+TxCTS equ %00010000 MR2 - tx cts flow control enable
+
+ use defsfile.2
+ use ..\macros\dt08.m
+ use ..\macros\os9svc.m
+
+*
+* DELAY: macro to create delay on chip accessing
+*
+DELAY macro
+ exg d0,d1 switch regs
+ exg d0,d1 ..and restore
+ endm
+
+*
+* Device entry table called by os9
+*
+AciaEnt dc.w Init
+ dc.w Read
+ dc.w Write
+ dc.w GetStat
+ dc.w PutStat
+ dc.w TrmNat
+ dc.w 0 exception handler (0=none)
+
+*
+* Init
+*   initialize device static storage and
+*   place the device in the os9 interrupt system
+*
+* passed: (a1) = pointer to device descriptor module
+*         (a2) = pointer to device static storage
+*         (a4) = process descriptor
+*         (a5) = callers register stack
+*         (a6) = system globals
+*
+Init
+ movea.l V_PORT(a2),a3 get port address
+ move.l a3,d0
+ andi.b #256-MPSOffs*MPSSubs,d0
+ movea.l d0,a0
+ move.b #$C0,MPSXtal(a0) set xtal 1:1 clock
+
+Init00
+ clr.l d0 clear d0
+ lea.l D_Start(a6),a0 get ptr to OEM-globals
+ move.l a0,Shadow(a2) save default pointer
+ move.w M$DevCon(a1),d0 get offset to shadow regs
+ beq.s Init01 not defined?
+ move.w (a1,d0.w),d0 get the offset value
+ move.l a0,d1 get base ptr
+ add.l d0,d1 add register nr to ptr
+ move.l d1,Shadow(a2) save updated pointer
+Init01
+ move.b #0,IrqFlags(a2) set enabled irqs for this device
+ cmpa.l #ClkPort,a3 is clock/console device?
+ bne.s Init02 no...
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ bset #TmBitA,(a0) set timer enable
+Init02 clr.w InCount(a2) set input-buffer empty
+ clr.w OutCount(a2) set output-buffer empty
+ clr.b InHalt(a2) set input halted state
+ clr.b OutHalt(a2) set output halted state
+ clr.b Action(a2) clear flag
+ lea InBuf(a2),a0 get pointer to input-buffer
+ move.l a0,InRead(a2) set initial read-pointer
+ move.l a0,InWrite(a2) set initial write-pointer
+ lea InSize(a0),a0 get pointer to end
+ move.l a0,InEnd(a2) set end pointer
+ lea OutBuf(a2),a0 get pointer to output-buffer
+ move.l a0,OutRead(a2) set initial read-pointer
+ move.l a0,OutWrite(a2) set initial write-pointer
+ lea OutSize(a0),a0 get pointer to end
+ move.l a0,OutEnd(a2) set end pointer
+
+Init1
+ bsr NetId set network address
+
+  move.b  #RxDefault,RTSmode(a2)	set RxRTS h/w control
+  beq.s   Init11			.. bra i no RTS to assert
+  st.b    RTSstate(a2)			signal RTS to be asserted
+Init11
+  move.b  #TxDefault,TXmode(a2)		set TxCTS h/w control
+
+ move.b PD_BAU-PD_OPT+M$DTyp(a1),d0 get baudrate code
+ bsr BaudCalc set baud rate
+ bcs.s InitExit
+ move.b PD_PAR-PD_OPT+M$DTyp(a1),d0 get parity code
+ bsr.s BitPar0 set comms mode
+ bcs.s InitExit
+
+Init15 move.b #Ench,MPSCntl(a3) enable xmit & rec
+ movea.l V_PORT(a2),a3 get device port address (subdevice)
+ move.b M$Vector(a1),d0 get device irq vector nr
+ move.b M$Prior(a1),d1 get priority
+ lea IrqRutA(pc),a0 get A-side handler
+ btst #ABbit,V_PORT+3(a2) is A-side?
+ beq.s Init16 yes..
+ lea IrqRutB(pc),a0 no.. is B-side
+
+Init16
+ OS9 F$IRQ install in irqs table
+ bcs.s InitExit os9 reports an error?
+
+Init2 move.b M$IRQLvl(a1),d0 get device hardware irq level
+ asl.w #8,d0 shift into mask bits
+ bset #SupvrBit+8,d0 set supervisor state bits
+ move.w d0,IRQMask(a2) save irq mask for future use
+
+Init20
+ movea.l V_PORT(a2),a3 get ptr to port
+ bsr RxEnable go and enable rx-interrupts
+ bsr TxDisable and disable tx-interrupts
+Init30 movea.l Shadow(a2),a0 get shadow reg ptr
+ move.l a3,d0 get port addr
+ andi.b #256-MPSOffs*2,d0 remove side bits
+ movea.l d0,a3 set ptr to A-side of device
+ move.b (a0),MPSImr(a3) set interrupt masks
+
+Init99 moveq #0,d1 no errors
+InitExit rts
+
+ParDefs
+ dc.b $10 no parity
+ dc.b $04 odd parity
+ dc.b $10 no parity, no special protocol
+ dc.b $00 even parity
+
+BitsDefs
+ dc.b $03 8bits
+ dc.b $02 7bits
+ dc.b $01 6bits
+ dc.b $00 5bits
+
+StopDefs
+ dc.b $07 1 stopbit
+ dc.b $07 1.5 stopbit for 5bit data
+ dc.b $0F 2 stop bits
+ dc.b $FF illegal
+
+*
+* BitPar
+*   Setup the bits/parity/stopbits
+*   mode for this device
+*
+* passed: (d0.b) = os9 parity code word
+*
+BitPar bsr.s BitPar0 set parity and other stuff
+ bcs.s BitPar9 error?
+ move.b #Ench,MPSCntl(a3) enable xmit & rec
+BitPar9 rts
+
+*
+* BitPar0
+*   Setup the bits/parity/stopbits without
+*   enabling the device
+*
+BitPar0 movea.l V_PORT(a2),a3 get device port
+ moveq.l #0,d2 sweep d2
+ andi.w #$00FF,d0 clear msbs
+ move.w d0,d1 copy parity value
+ andi.w #3,d1 isolate parity mode
+ lea.l ParDefs(pc),a0 point to parity mode bits
+ move.b (a0,d1.w),d2 get parity code
+ move.w d0,d1 get data bit size
+ lsr.w #2,d1 make index value
+ andi.w #3,d1 make legal index
+ lea.l BitsDefs(pc),a0 point to bits/char table
+ or.b (a0,d1.w),d2 add into d2
+ move.w d0,d1 get stop bit value
+ lsr.w #4,d1 make index value
+ andi.w #3,d1 make legal index
+ lea.l StopDefs(pc),a0 point to stop bit table
+ move.b (a0,d1.w),d1 get stop bit value
+ bmi BadMode ???
+ move.b #10,MPSCntl(a3) disable xmit & rec
+ DELAY
+ move.b #$10,MPSCntl(a3) set mode reg 1
+ DELAY
+  or.b  RTSmode(a2),d2	add RxRTS h/w handshake mode
+ move.b d2,MPSMode(a3) set parity/bit
+ move.b d0,Parity(a2) save parity code
+  or.b  TXmode(a2),d1	add Tx h/w handshake mode
+ move.b d1,MPSMode(a3) set stopbits
+
+  tst.b RTSstate(a2)	need to assert RTS ?
+  beq.s BitPar20	..no; branch on
+  bsr	EnabRTS		go assert RTS line manually
+BitPar20
+ moveq.l #0,d1 no errors
+ rts
+
+*
+* NetId
+*   read installation address switch
+*   to get netnode address
+*
+* returns: (d0.w) = address
+*
+NetId move.l V_PORT(a2),d0 get device port
+ andi.b #256-MPSSubs*MPSOffs,d0 remove lsb bits
+ movea.l d0,a0 set pointer to the chip
+ move.b MPSIp(a0),d0 get input byte 1
+ move.b MPSIp+MPSOffs*2(a0),d1 get input byte 2
+ lsr.w #4,d0 shift DIP1-4 into b0..b3
+ andi.w #$000F,d0 keep b0..b3
+ btst #1,d1 is DIP10 set?
+ beq.s NetId1 no...
+ bset #9,d0 set b9
+NetId1 asl.w #1,d1 shift DIP5-9 into b4..b8
+ andi.w #$01F0,d1 keep b4..b8
+ or.w d1,d0 add bits to d0
+ move.w d0,Station(a2) setup node address
+ move.w d0,$402 save in DT-08 globals
+ moveq.l #0,d1 no errors
+ rts
+
+*
+* BaudCalc
+*   setup the baudrate for this port
+*
+* passed: (d0.b) = the os9 baudrate code value
+*
+BaudCalc movea.l V_PORT(a2),a3 get device port
+ andi.w #$00FF,d0
+ cmpi.w #MaxBaud,d0 legal baud rate?
+ bge.s BadMode no..
+	 move.w d0,d1			take a snapshot
+	 asl.w #1,d1 make word offset
+ lea.l BaudTable(pc),a0 get table
+ move.w (a0,d1.w),d1 get rate value
+*	 lea.l BaudTable+1(pc),a0
+*	 clr.w d2 sweep d2
+*	 move.b (a0,d0.w),d2 get packet size
+ cmpi.b #N_A,d1 available?
+ beq.s BadMode no..
+	 move.b d1,MPSCntl(a3)		$80 = Set Rx X / $90 = Clear Rx X
+	 DELAY
+	 ori.b  #$20,d1
+	 move.b d1,MPSCntl(a3)		$a0 = Set Tx X / $b0 = Clear Tx X
+
+	 ror.w  #8,d1 
+
+ move.b d1,MPSBdSt(a3) set baudrate in device
+ move.b d0,BaudRate(a2) save current baudcode
+ moveq.l #0,d1 no error
+ rts
+BadMode move.w #E$BMode,d1 set error code
+ ori.b #Carry,ccr set error
+ rts
+
+N_A equ $01 not available baudrate
+
+BaudTable
+ dc.b $00,$90		0 = 50 baud
+ dc.b $00,$80		1 = 75 not available		X = 1
+ dc.b $11,$90		2 = 110 baud
+ dc.b $22,$90		3 = 134.5 baud
+ dc.b $33,$80		4 = 150 not available		X = 1
+ dc.b $44,$90		5 = 300 baud
+ dc.b $55,$90		6 = 600 baud
+ dc.b $66,$90		7 = 1200 baud
+ dc.b $AA,$80		8 = 1800 not available		X = 1
+ dc.b $00,N_A		9 = 2000 not available
+ dc.b $88,$90		A = 2400 baud
+ dc.b $44,$80		B = 3600 not available		X = 1
+ dc.b $99,$90		C = 4800 baud
+ dc.b $AA,$90		D = 7200 baud
+ dc.b $BB,$90		E = 9600 baud
+* dc.b $cc,$80		F = 19200 not available		X = 1
+ dc.b $cc,N_A		F = 19200 not available		X = 1
+ dc.b $CC,$90		10 = 38400 baud
+ dc.b $DD,$90		11 = Timer baud
+ dc.b $EE,$90		12 = EXT 16x baud
+ dc.b $FF,$90		13 = EXT 1x baud
+ dc.b $33,$90		14 = 200 baud
+ dc.b $77,$90		15 = 1050 baud
+
+ dc.b $55,$80		16 = 14400 baud			X = 1
+ dc.b $66,$80		17 = 28800 baud			X = 1
+ dc.b $77,$80		18 = 57600 baud			X = 1
+ dc.b $88,$80		19 = 115200 baud		X = 1
+MaxBaud equ *-BaudTable
+
+*
+* Write
+*   write one character to the device buffers,
+*   also provide flowcontrol when the buffer
+*   gets down to empty. this routine
+*   performs no i/o it only sets flags for the
+*   interrupt server to see.
+*
+* passed: d0.b = byte to write
+*         (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = callers register stack
+*         (a6) = system globals
+*
+Write00
+ bsr Sleep zzz...
+Write cmpi.w #OutSize,OutCount(a2) is buffer full?
+ bhs.s Write00 yes.. wait for i/o
+ movea.l OutWrite(a2),a0 get write pointer
+ move.b d0,(a0)+ save char in the buffer
+ cmpa.l OutEnd(a2),a0 is ptr at buffer end?
+ bne.s Write1 no...
+ lea OutBuf(a2),a0 reset ptr to buffer start
+Write1 move.l a0,OutWrite(a2) save updated write pointer
+ addq.w #1,OutCount(a2) add one to output level
+ cmpi.w #1,OutCount(a2) tx interrupts active?
+ bhi.s Write9 yes.. dont re-enable
+ bsr TxEnable enable tx interrupts
+Write9 moveq #0,d1
+ rts
+
+*
+* TrmNat
+*   this routine detaches the device from the
+*   irq system and disables all interrupts from
+*   its associated hardware.
+*
+* passed: (a1) = pointer to device descriptor module
+*         (a2) = device static storage
+*         (a4) = process descriptor pointer
+*         (a6) = system globals
+*
+TrmNat00
+ pea.l TrmNat(pc) return here instead
+ bsr Sleep zzz...
+ addq.l #4,sp skip pushed value
+TrmNat
+ move.w P$ID(a4),d0 get process id who is terminating this device
+ move.w d0,V_BUSY(a2) change device user to this process
+ move.w d0,V_LPRC(a2) and is also the last pid to use this device
+ tst.w OutCount(a2) any more chars waiting for output?
+ bne.s TrmNat00 yes.. wait for output irqs to die
+
+  tst.b  RTSstate(a2)	RTS asserted ?
+  beq.s  TrmNat20	..no; no need to negate
+  bsr    DisablRTS	go negate RTS line
+TrmNat20
+
+ movea.l V_PORT(a2),a3 get device port
+ bsr TxDisable remove tx-interrupts
+ bsr RxDisable remove rx-interrupts
+ move.b M$Vector(a1),d0 get device vector
+ suba.l a0,a0 set handler to 0
+ OS9 F$IRQ remove device from devs table
+ moveq #0,d1 return carry clear
+ rts
+
+*
+* Read
+*   this routine reads one byte from the device buffers
+*   and returns it to the caller (usually os9).
+*   it also performs flowcontrol when the buffer level
+*   goes down to 10%, note that no direct i/o is performed.
+*   this routine only sets flags for the interrupt server
+*   to see.
+*
+* passed: (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = pointer to callers register stack
+*         (a6) = system globals
+*
+Read00
+ bsr Sleep zzz... wait for I/O interrupt
+Read
+ tst.w InCount(a2) any bytes in the input buffer?
+ beq.s Read00 no.. wait for i/o
+ movea.l InRead(a2),a0 get read pointer
+ move.b (a0)+,d0 get the next char from the buffer
+ cmpa.l InEnd(a2),a0 is ptr at buffer end?
+ bne.s Read1 no...
+ lea InBuf(a2),a0 set ptr to buffer start
+Read1 move.l a0,InRead(a2) save updated read pointer
+ subq.w #1,InCount(a2) update buffer level
+ cmpi.w #InLvl10,InCount(a2) down to 10% level?
+ bhi.s Read2 no... not yet
+ tst.b Action(a2) check action flag
+ bne.s Read2 already trying to send flow control!
+ tst.b InHalt(a2) check halted state
+ beq.s Read2 not halted!
+ move.b V_XON(a2),InHalt(a2) set ascii to send
+ beq.s Read2 not defined
+ bset #0,Action(a2) set action flag
+ bsr TxEnable arrange for it to be sent
+Read2 move.b V_ERR(a2),PD_ERR(a1) copy I/O stat to PathDesc
+ beq.s Read9 no error?
+ clr.b V_ERR(a2) clear error status
+ move.w #E$Read,d1 set read error
+ ori.b #Carry,ccr set error flag
+Read9 rts return status to caller
+
+*
+* Sleep
+*   this subroutine puts the caller process
+*   to sleep waiting for signals from the
+*   interrupt server, if the signal is S$Wake
+*   sleep returns to its caller, otherwise Sleep
+*   will return to the callers caller, thus
+*   sending the signal code to the caller of
+*   the device driver (usually os9).
+*
+Sleep move.l d0,-(sp) save reg
+ move.w V_BUSY(a2),V_WAKE(a2) arrange for wakeup
+ moveq.l #0,d0 sleep forever
+ OS9svc F$Sleep wait for an interrupt
+ move.w P$Signal(a4),d1 get signal
+ beq.s Sleep90 no signal?
+ cmpi.w #S$Intrpt,d1 deadly signal?
+ bls.s SleepEr yes..
+Sleep90 btst.b #Condemn,P$State(a4) has process died?
+ bne.s SleepEr yes.. return error
+ move.l (sp)+,d0 restore reg
+ rts return to caller
+SleepEr addq.l #8,sp remove caller from the stack
+
+*
+* GetStat
+*   this routine is called for every I$GetStt call
+*   made to this driver.
+*
+* Supported functions are:  SS_Ready, SS_EOF and SS_Opt
+*
+* passed: d0.w = function code
+*         (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = pointer to callers register stack
+*         (a6) = system globals
+*
+Abort ori #Carry,ccr return Carry set
+ rts
+ErrNtRdy move.w #E$NotRdy,d1
+ bra.s Abort
+GetStat
+ cmpi.w #SS_Ready,d0 is it SS_Ready function?
+ bne.s GetStat10 no..
+ clr.w R$d1(a5) clear msbs of callers d1 register
+ move.w InCount(a2),R$d1+2(a5) return buffer level
+ beq.s ErrNtRdy error?
+ bra.s GetStat99 no error!
+
+GetStat10 cmpi.w #SS_EOF,d0 is it SS_EOF function?
+ beq.s GetStat99 yes.. SCF devs never returns EOF
+
+GetStat20 cmpi.w #SS_Opt,d0 is it SS_Opt function?
+ bne Unknown no...
+ move.b BaudRate(a2),PD_BAU(a1) set currently active baudrate
+ move.b Parity(a2),PD_PAR(a1) set currently active parity
+GetStat99 moveq #0,d1 no error return
+ rts
+
+*
+* PutStat
+*   this routine is called for every I$SetStt call made
+*   to this driver.
+*
+* Supported functions are: SS_Opt, SS_SSig, SS_Relea
+*                          and SS_Open
+*
+*	and now also SS_EnRTS and SS_DsRTS
+*
+PutStat
+ cmpi.w #SS_Opt,d0 is it set SS_Opt function?
+ bne.s PutStat10 no...
+PutStat1 move.b PD_BAU(a1),d0 get current baudrate
+ cmp.b BaudRate(a2),d0 has it changed?
+ beq.s PutStat2 no.. check parity
+ bsr BaudCalc calculate and set new baudrate
+ bcs.s PutStat3 error?
+PutStat2 move.b PD_PAR(a1),d0 get current parity/mode
+ cmp.b Parity(a2),d0 has comms mode changed?
+ beq.s GetStat99 no.. nothing has changed
+ bsr BitPar set bits/parity
+PutStat3 rts return to caller
+PutStat10
+ cmpi.w #SS_SSig,d0 is it SS_SSig function?
+ bne.s PutStat20 no..
+ tst.w SigPrc(a2) signalling facility in use?
+ bne.s ErrNtRdy yes..
+ move.w PD_CPR(a1),d0 get callers process id
+ move.w R$d2+2(a5),d1 get signal code
+ move.w sr,-(sp) save sr register
+ move.w IRQMask(a2),sr set irq masks
+ tst.w InCount(a2) any data?
+ bne.s PutStat19 yes.. signal right away
+ move.w PD_PD(a1),d2 get associated pathnr
+ movem.w d0-d2,SigPrc(a2) save pid, signal, path
+ move.w (sp)+,sr unmask irqs
+ bra.s GetStat99 exit without errors
+PutStat19 move.w (sp)+,sr unmask irqs
+ bra SendSig and send the signal
+PutStat20
+ cmpi.w #SS_Relea,d0 is it SS_Relea function?
+ bne.s PutStat30 no...
+ move.w PD_CPR(a1),d0 get pid
+ move.w PD_PD(a1),d2 get pathnr
+ lea.l SigPrc(a2),a3 get SigPrc location
+ cmp.w (a3),d0 is signal for this process
+ bne.s PutStat29 no..
+ cmp.w 4(a3),d2 does it concern this path?
+ bne.s PutStat29 no..
+ clr.w (a3) remove pid from SigPrc
+PutStat29 moveq.l #0,d1 no error
+ rts
+PutStat30
+ cmpi.w #SS_Open,d0 is it SS_Open function?
+ beq PutStat1 yes..
+
+  cmpi.w  #SS_EnRTS,d0	is it enable RTS ?
+  bne.s   PutStat32
+EnabRTS
+  move.w  #MPSOprRes,d0		clear register offset
+  st.b    RTSstate(a2)		flag RTS asserted
+EnabRTS10
+  move.l  V_PORT(a2),d2		get device port
+  andi.b  #256-MPSSubs*MPSOffs,d2	remove lsb bits
+  movea.l d2,a0
+  move.w  #1,d2			assume A-side
+  btst    #ABbit,V_PORT+3(a2)	is A or B-side ?
+  beq.s   EnabRTS_A		is A-side!
+  move.w  #2,d2			B-side offset
+EnabRTS_A
+  btst    #4,V_PORT+3(a2)	is A/B-side or C/D-side ?
+  beq.s	  EnabRTS_AB		its AB-side, go for OP1
+  addi.w  #MPSOffs*2,d0		add up to OP2
+  move.b  d2,(a0,d0.w)		and set/reset appropriate bit in OP2
+  bra.s   EnabRTS_OK
+EnabRTS_AB
+  move.b  d2,(a0,d0.w)		set/reset in OP1
+EnabRTS_OK
+  moveq.l #0,d1 no error
+  rts
+* above routine destroys d0,d2,a0  d1 := 0
+
+PutStat32
+  cmpi.w  #SS_DsRTS,d0	is it disable RTS ?
+  bne.s   Unknown	branch if not
+DisablRTS
+  move.w  #MPSOprSet,d0	set register offset
+  sf.b    RTSstate(a2)	flag RTS negated
+  bra.s   EnabRTS10
+
+Unknown move.w d0,$400 save for debug
+ move.w #E$UnkSvc,d1 Unknown service code
+ ori.b #Carry,ccr
+ rts
+
+*
+* RxEnable
+*   enable rx-interrupts by programming the
+*   shared interrupt mask register for this
+*   device.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+RxEnable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A or B-side?
+ beq.s RxEnA is A-side!
+RxEnB bset #RxBitB,IrqFlags(a2) set interrupt enable B
+ bset #RxBitB,(a0) and also in shadow regs
+ move.b (a0),MPSImrB(a3) now program the device
+ rts
+RxEnA bset #RxBitA,IrqFlags(a2) set interrupt enable A
+ bset #RxBitA,(a0) and also in shadow regs
+ move.b (a0),MPSImr(a3) now program the device
+ rts
+
+*
+* RxDisable
+*   disable rx-interrupts by programming the
+*   shared interrupt mask register for this
+*   device.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+RxDisable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get pointer to shadow reg
+ btst #ABbit,V_PORT+3(a2) is A or B-side?
+ beq.s RxDisA is A-side!
+RxDisB bclr #RxBitB,IrqFlags(a2) disable rx interrupt
+ bclr #RxBitB,(a0) also in shadow regs
+ move.b (a0),MPSImrB(a3) now program the device
+ rts
+RxDisA bclr #RxBitA,IrqFlags(a2) disable rx interrupt
+ bclr #RxBitA,(a0) also in shadow regs
+ move.b (a0),MPSImr(a3) now program the device
+ rts
+
+*
+* TxEnable
+*   update the hardware to enable tx-interrupts
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+TxEnable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A/B-side?
+ beq.s TxEnA is A-side!
+
+TxEnB
+ bset #TxBitB,(a0) enable tx irqs
+ bset #TxBitB,IrqFlags(a2) enable flags also
+ move.b (a0),MPSImrB(a3) update Imr register
+ rts
+
+TxEnA
+ bset #TxBitA,(a0) enable tx irqs
+ bset #TxBitA,IrqFlags(a2) enable flags also
+ move.b (a0),MPSImr(a3) update Imr register
+ rts
+
+*
+* TxDisable
+*   update hardware and disable tx-interrupt
+*   requests from it.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+TxDisable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A/B-side?
+ beq.s TxDisA is A-side!
+
+TxDisB
+ bclr #TxBitB,(a0) disable tx irqs
+ move.b (a0),MPSImrB(a3) update Imr register
+ bclr #TxBitB,IrqFlags(a2) remove from flags also
+ rts
+
+TxDisA
+ bclr #TxBitA,(a0) disable tx irqs
+ move.b (a0),MPSImr(a3) update Imr register
+ bclr #TxBitA,IrqFlags(a2) remove from flags also
+ rts
+
+*
+* OutIrq
+*   this is the output interrupt service subroutine,
+*   it is called for every detected output interrupt
+*   from this port. OutIrq checks in order:
+*   1. If a flowcontrol signal for the input buffer
+*      must be sent, this is signalled through the InHalt
+*      flag.
+*   2. If the remote station has requested X-OFF
+*   3. If the output buffer no longer contains any data.
+*   4. Sends the next character and checks to see if the
+*      owner process should be signalled to wake up.
+*
+OutIrq tst.b Action(a2) any flowcontrol?
+ beq.s OutIrq2 no..
+ move.b InHalt(a2),d0
+ move.b d0,MPSData(a3) send flowcontrol char
+ cmp.b V_XON(a2),d0 did we send X-ON?
+ bne.s OutIrq1 no..
+ clr.b InHalt(a2) remove input halted state
+OutIrq1 clr.b Action(a2) action done
+ rts
+OutIrq2 tst.b OutHalt(a2) is output halt requested?
+ beq.s OutIrq4 no..
+OutIrq3 bsr.s TxDisable remove tx interrupt
+ moveq #0,d1 no error
+ rts
+OutIrq4 tst.w OutCount(a2) is buffer empty?
+ beq.s OutIrq3 yes.. disable tx interrupt
+ movea.l OutRead(a2),a0 get read pointer
+ move.b (a0)+,MPSData(a3) send the next char
+ cmpa.l OutEnd(a2),a0 is ptr at buffer end?
+ bne.s OutIrq5 no..
+ lea OutBuf(a2),a0 reset ptr to buffer start
+OutIrq5 move.l a0,OutRead(a2) save updated read pointer
+ subq.w #1,OutCount(a2) remove one char from buffer
+ cmpi.w #OutLvl10,OutCount(a2) is at 10% level?
+ blo WakeUp send user a wakeup signal
+OutIrq9
+ moveq #0,d1 no error
+ rts
+
+*
+* IrqRutB
+*   this is the interrupt service entry for all
+*   B-side devices.
+*
+* passed: (a2) = device static storage
+*         (a3) = device port
+*         (a6) = system globals
+*
+IrqRutB move.b MPSImrB(a3),d0 get interrupt flags
+ and.b IrqFlags(a2),d0 remove inactive bits
+ beq.s IrqErrB not this device?
+ btst #RxBitB,d0 is it rx-interrupt?
+ bne.s IrqInA yes...
+ btst #TxBitB,d0 is it tx-interrupt?
+ bne.s OutIrq yes..
+IrqErrB ori.b #Carry,ccr set carry
+ rts
+
+*
+* IrqRutA
+*   this is the interrupt service entry for all
+*   A-side devices.
+*
+* passed: (a2) = device static storage
+*         (a3) = device port
+*         (a6) = system globals
+*
+IrqRutA move.b MPSImr(a3),d0 get interrupt flags
+ and.b IrqFlags(a2),d0 remove inactive bits
+ beq.s IrqErrA not this device?
+ btst #RxBitA,d0 is it rx-interrupt?
+ bne.s IrqInA yes..
+ btst #TxBitA,d0 is it tx-interrupt?
+ bne OutIrq yes..
+IrqErrA ori.b #Carry,ccr set carry
+ rts
+
+*
+* IrqInA
+*   this is the interrupt service subroutine for
+*   all input interrupts detected from this device.
+*   it checks in order:
+*   1. special flowcontrol chars and other special chars
+*   2. if the buffer has reached 90% and attempts to send
+*      X-OFF if so.
+*   3. if the user has requested a signal to be sent
+*      (SS_SSig call)
+*   4. and finally if any sleeping owner should be
+*      sent a wakeup signal.
+*
+IrqInA
+ move.b MPSBdSt(a3),d1 get status
+ andi.b #$70,d1 keep error bits
+ beq.s IrqInAA no errors?
+
+ cmpi.b #$20,d1		check parity error		added 931117
+ bne.s notperr 		not parity error
+ btst  #7,Parity(a2)	no check enabled ?
+ bne.s irqnop		if parity error, skip it
+notperr
+ or.b d1,V_ERR(a2) save accumulated errors
+irqnop
+ move.b #$40,MPSCntl(a3) reset error condition
+IrqInAA
+ move.b MPSData(a3),d0 get input data byte
+ beq.s InIRQ impossible ctrl char?
+ cmp.b V_INTR(a2),d0 is it keyboard interrupt?
+ beq.s InAbort yes..
+ cmp.b V_QUIT(a2),d0 is it keyboard abort?
+ beq.s InQuit yes..
+ cmp.b V_XON(a2),d0 is it X-ON?
+ beq.s InXON yes...
+ cmp.b V_XOFF(a2),d0 is it X-OFF?
+ bne.s InIRQ no... buffer the char and exit
+
+*
+* InXOFF
+*   request output halt, the next output interrupt
+*   will notice this flag and act upon it.
+*
+InXOFF move.b d0,OutHalt(a2) request output halt
+ ori.b #Carry,ccr set carry
+ rts
+
+*
+* InXON
+*   request output continuation, enable output interrupts
+*   and let the next output interrupt check this flag.
+*
+InXON clr.b OutHalt(a2) remove output halted state
+ bsr TxEnable enable tx interrupt
+ bra WakeUp and wakeup owner
+
+*
+* InAbort
+*   send a deadly Ctrl-C signal to the owner,
+*   this signal will abort a user process.
+*
+InAbort moveq.l #S$Intrpt,d1 interrupt signal
+ bra.s InQuit1 send deadly signal
+
+*
+* InQuit
+*   send a deadly Ctrl-B (break) signal to the owner,
+*   this signal will abort a user process.
+*
+InQuit moveq.l #S$Abort,d1 abort signal
+InQuit1 move.b d0,-(sp) save input char
+ move.w V_LPRC(a2),d0 get last process id
+ beq.s InQuit90 no last user?
+ OS9svc F$Send send signal to last user
+InQuit90 move.b (sp)+,d0 restore input char
+
+*
+* InIRQ
+*   any input interrupt with valid data will
+*   arrive here to write the data to the device
+*   buffer.
+*
+* passed: d0.b = input byte
+*
+InIRQ cmpi.w #InSize,InCount(a2) is buffer currently filled?
+ blo.s InIRQ0 no.. we can still write to it
+ ori.b #$10,V_ERR(a2) set input overrun error
+ bra.s InIRQ3 check signals and stuff
+InIRQ0 movea.l InWrite(a2),a0 get write pointer
+ move.b d0,(a0)+ put byte in the device buffer
+ cmpa.l InEnd(a2),a0 is at buffer end?
+ bne.s InIRQ1 no...
+ lea InBuf(a2),a0 reset pointer to buffer start
+InIRQ1 move.l a0,InWrite(a2) update write pointer
+ addq.w #1,InCount(a2) add one to buffer level
+ cmpi.w #InLvl90,InCount(a2) is at 90% level?
+ blo.s InIRQ3 no.. not yet
+ tst.b InHalt(a2) already halted?
+ bne.s InIRQ3 yes.. trust the other system to halt in time
+ move.b V_XOFF(a2),InHalt(a2) set halted state
+ beq.s InIRQ3 not defined?
+ bset #0,Action(a2) action send X-OFF active
+ bsr TxEnable arrange for it to be sent
+InIRQ3 move.w SigPrc(a2),d0 any process waiting for SS_SSig?
+ beq.s InIRQ5 no..
+ move.w SigPrc+2(a2),d1 get signal code to send
+ clr.w SigPrc(a2) remove pid, job done
+ bra.s SendSig send the signal
+InIRQ5 btst #0,MPSBdSt(a3) is more bytes available?
+ bne IrqInA yes.. service immediately
+
+WakeUp move.w V_WAKE(a2),d0 owner waiting?
+ beq.s Wake90 no... return anyway
+ clr.w V_WAKE(a2) remove pid
+ moveq.l #S$Wake,d1 set signal: S$Wake
+
+SendSig OS9svc F$Send wake up process
+
+Wake90 moveq #0,d1 no error
+ rts
+
+ ends

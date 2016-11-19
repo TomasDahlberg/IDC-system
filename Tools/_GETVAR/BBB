@@ -1,0 +1,24 @@
+calendar B_larm_kalender = {
+  ,  ,We,  ,Fr,Sa,  , !        ! 41.14 - 16.75 !
+0005 - 0005          ! Black  ! 01.25 - 97.00 !
+Mo,  ,We,Th,Fr,Sa,  , ! Black  ! 89.72 - 95.56 !
+                     !        !               !
+  ,Tu,We,  ,  ,Sa,Su, ! Black  ! 05.52 - 76.48 !
+                     !        !               !
+  ,Tu,  ,  ,  ,Sa,Su, ! Orange ! 70.00 - 13.05 !
+0002 - 2979          ! Black  ! 06.91 - 20.00 !
+  ,Tu,  ,  ,  ,Sa,  , !        ! 00.00 - 00.25 !
+                     !        !               !
+}
+calendar C_larm_kalender = {
+  ,  ,We,  ,Fr,Sa,  , !        ! 41.14 - 17.01 !
+0005 - 0005          ! Black  ! 01.24 - 94.20 !
+Mo,  ,We,Th,Fr,Sa,  , ! Black  ! 89.72 - 57.08 !
+                     !        !               !
+  ,Tu,We,  ,  ,Sa,Su, ! Black  ! 05.52 - 79.04 !
+                     !        !               !
+  ,Tu,  ,  ,  ,Sa,Su, ! Orange ! 70.00 - 13.05 !
+0002 - 2979          ! Black  ! 06.91 - 20.00 !
+  ,Tu,  ,  ,  ,Sa,  , !        ! 00.00 - 00.25 !
+                     !        !               !
+}

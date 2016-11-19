@@ -1,0 +1,69 @@
+ psect fork_c,0,0,0,0,0
+ nam fork_c
+* extern int os9fork();
+* 
+* char *argblk[] = {
+ vsect
+ align
+argblk: 
+*     "shell",
+ dc.l _1
+*     0
+* };
+ dc.l 0
+ ends
+* 
+* extern char **environ;
+* 
+* #define SHELL_TERMINATED 0x0101
+* 
+* main(argc, argv)
+* int argc;
+* char *argv[];
+* {
+ ttl main
+main:  link a5,#0
+ movem.l #_2!3,-(sp)
+ move.l #_4,d0 :6
+ bsr _stkcheck
+*   int shellid, pid;
+* 
+*   pid = atoi(argv[1]);
+ subq.l #8,sp :2
+ movea.l 12(sp),a0
+ move.l 4(a0),d0
+ bsr atoi
+ move.l d0,(sp) :2
+*   
+* /*
+* 
+*   shellid = os9exec(os9fork, argblk[0], argblk, environ, 0, 0, 3);
+ pea 3.w
+ clr.l -(sp) :2
+ clr.l -(sp) :2
+ move.l environ(a6),-(sp)
+ pea argblk(a6)
+ move.l argblk(a6),d1
+ lea os9fork(pc),a0
+ move.l a0,d0 :2
+ bsr os9exec
+ lea 20(sp),sp
+ move.l d0,4(sp)
+*   wait(0);
+ moveq.l #0,d0 :2
+ bsr wait
+*   kill(pid, SHELL_TERMINATED);
+ move.l #257,d1 :6
+ move.l (sp),d0 :2
+ bsr kill
+* }
+ addq.l #8,sp :2
+_5
+ movem.l -4(a5),#_2
+ unlk a5
+ rts :2
+_4 equ 0xffffffa0 :0
+_2 equ 0x00000100 :0
+_3 equ 0x00000014 :0
+_1 dc.b "shell",$0
+ ends

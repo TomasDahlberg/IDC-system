@@ -1,0 +1,117 @@
+/*
+  abyte ³ The character to be printed; its value can be 0 to 255.
+ ÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+  cmd   ³ Specifies the printer function to be performed.
+	³   biosprint³ _bios_printer ³ Printer Function
+	³   ÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+	³       0    ³_PRINTER_WRITE ³ Prints the character in abyte
+	³       1    ³_PRINTER_INIT  ³ Initializes the printer port
+	³       2    ³_PRINTER_STATUS³ Reads the printer status
+	³ If cmd = 1 or 2 (_PRINTER_INIT or _PRINTER_STATUS), abyte is
+	³ ignored.
+ ÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+  port  ³ Identifies the printer; 0 = LPT1, 1 = LPT2, etc.
+
+
+ Return Value:
+Current printer status, obtained by ORing these bit values together:
+
+  Bit³ Value³ Printer Status
+ ÍÍÍÍØÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   0 ³ 0x01 ³ Device time out
+   3 ³ 0x08 ³ I/O error
+   4 ³ 0x10 ³ Selected
+   5 ³ 0x20 ³ Out of paper
+   6 ³ 0x40 ³ Acknowledge
+   7 ³ 0x80 ³ Not busy
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <bios.h>
+#include <string.h>
+#include <time.h>
+
+long filesize(FILE *stream)
+{
+   long curpos, length;
+
+   curpos = ftell(stream);
+   fseek(stream, 0L, SEEK_END);
+   length = ftell(stream);
+   fseek(stream, curpos, SEEK_SET);
+   return length;
+}
+
+void printStatus(clock_t start, long totsize, long totbytes)
+{
+   clock_t end;
+   float ts;
+   int its;
+
+       end = clock();
+       ts = (end - start) / CLK_TCK;
+
+/*
+122222 bytes sent, elapsed time 2 min  5 sec. Expected time 5 min 12 sec. 33%
+*/
+       printf("%6ld bytes sent, ", totbytes);
+       its = ts;
+       printf("elapsed time %d min %2d sec. ", its / 60, its % 60);
+       its = ts * totsize / totbytes;
+       printf("Expected time %d min %2d sec.", its / 60, its % 60);
+       printf("%3d%%\r", (int) (100L * totbytes / totsize));
+}
+
+int main(int argc, char *argv[])
+{
+   #define STATUS  2    /* printer status command */
+   #define PORTNUM 0    /* port number for LPT1 */
+
+   int status, abyte=0;
+   int i, n;
+   char buf[256];
+   FILE *fp;
+   clock_t start, end;
+   long totbytes, w;
+   long totsize;
+
+   if (argc != 2) {
+     printf("Usage: PKW <binary-file>\n");
+     exit(1);
+   }
+
+   if ((fp = fopen(argv[1], "rb")) == NULL) {
+     printf("Cannot open file\n");
+     exit(1);
+   }
+   totsize = filesize(fp);
+
+   status = biosprint(1, abyte, PORTNUM);
+
+   start = clock();
+
+   totbytes = 0;
+
+   w = 0;
+   while (n = fread(buf, 1, 256, fp)) {
+     for (i = 0; i < n; i++) {
+       while (!((status = biosprint(STATUS, abyte, PORTNUM)) & 0x80))
+	 w ++;
+       status = biosprint(0, buf[i], PORTNUM);
+       totbytes ++;
+     }
+     if ((totbytes & 0x3ff) == 0) {
+/*       printf("%6ld (w = %6ld), stat = %6d\r", totbytes, w, status); */
+       printStatus(start, totsize, totbytes);
+       w = 0;
+     }
+   }
+   end = clock();
+   printStatus(start, totsize, totbytes);
+   ts = (end - start) / CLK_TCK;
+   printf("\n");
+   printf("Average speed %g bps\n", (float) totbytes*10/ts);
+   return 0;
+}
+

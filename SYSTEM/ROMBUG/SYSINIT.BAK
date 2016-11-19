@@ -1,0 +1,137 @@
+
+ nam System Initialize
+ ttl Hardware dependent routines
+* File: SYSINIT.A
+********************************
+* SysInit and related hardware dependent routines
+
+* History:
+*
+* 1990-10-05  first running
+* 1990-10-14  fixed irq reset when leaving for restart of os9
+* 1990-10-18  added restart of M3003 irq condition
+* 1991-10-18  select all SII-bus modules once at reset
+*
+* Copyright 1984 by Microware Systems Corporation
+* All Rights Reserved
+* Reproduced Under License
+
+*   This source code is the proprietary confidential property of
+* Microware Systems Corporation, and is provided to the licensee
+* for documentation and educational purposes only.  Reproduction,
+* publication, or any form of distribution to any party other than
+* the licensee is strictly prohibited.
+
+
+********************************
+*     Edition History
+
+*  #   date   Comments                                          by
+* -- -------- ------------------------------------------------- ---
+* 01 11-05-84 Metamorphosis from related code                   WGP
+* 02 07-10-85 Added code to support switchable debugger			res
+
+Edition equ 2 current edition number
+
+ use defsfile
+* Initializations for Motorola VME110 without VMEBug ROM
+
+ psect sysinit,0,0,Edition,0,0
+
+SysInit: reset calm hardware
+* movea.l #ClkPort,a3 Disable clock on VME system
+* move.b #1,2(a3)
+* clr.b (a3)
+* clr.b ModCntl turn off halt light
+ movea.l MemList(pc),a0 get exception jump table pointer
+ lea $1000(a0),a0 make it initial stack pointer value
+ move.l a0,0 set RAM initial SSP
+ lea Reset(pc),a0 get initial reset vector
+ move.l a0,4 set RAM reset vector
+* move.b #$F0,$34000e set SSEL0-3 low (op1)
+* move.b #$F0,$34001e set SSEL4-7 low (op2)
+ bsr ConsInit
+* move.b #$F0,$34000f set SSEL0-3 high (op1)
+* move.b #$F0,$34001f set SSEL4-7 high (op2)
+ clr.b $404 set input mode
+ move.b d0,$348000 kick watchdog
+ move.b #$C0,$340012 setup for x1 clock in quart
+ READRTC d0 make sure watch mux is defined
+ READRTC d0
+ WRITERTC #$0F select sts register
+ WRITERTC #$00
+ WRITERTC #$01 (watch run)
+ WRITELED #$00
+ lcdtest check if lcd is installed
+ beq SysInit9 no lcd device?
+ lcdgo initialize lcd screen
+ lea SystmMsg(pc),a0
+SysInt10 move.b (a0)+,d0 get next char
+ beq.s SysInit9x end of string?
+ lcdput
+ bra.s SysInt10 continue with next char
+SysInit9x
+ movea.l	 #$3fffd8,a0
+SysInit9y
+ move.b		 (a0)+,d0
+ cmpi.b		 #$20,d0
+ beq.s		 SysInit9 end of string?
+ lcdput
+ bra.s SysInit9y continue with next char
+SysInit9 bra SysRetrn return to boot.a
+*
+* 1234567890123456789012345678901234567890
+*
+* +----------------------------------------+
+* |Nod 122.253, Batt=3670mV, no-ipl-string!|
+* |Laddar IDCsystem 1.894... (930927 13:45)|
+* +----------------------------------------+
+*
+* +----------------------------------------+
+* |Nod 122.253, Batt=3670mV, no-ipl-string!|
+* |930927 13:45 Laddar IDCsystem 1.894...  |
+* +----------------------------------------+
+*
+* +----------------------------------------+
+* |Nod 122.253, Batt=3670mV,               |
+* |930927 13:45 Laddar IDCsystem 1.894...  |
+* +----------------------------------------+
+*
+* +----------------------------------------+
+* |Nod 0.3, Batt = 3670mV, (no-ipl-string!)|
+* |Laddar IDCsystem 1.894...               |
+* +----------------------------------------+
+*
+* +----------------------------------------+
+* |Laddar IDCsystem 1.894, Nod 0.3,        |
+* |Batt = 3670mV,                          |
+* +----------------------------------------+
+*
+* +----------------------------------------+
+* |Laddar IDCsystem 1.894, Nod 0.3,        |
+* |Batt = 3670mV, (no-ipl-string!)         |
+* +----------------------------------------+
+*
+
+SystmMsg dc.b "Laddar Program.. "
+*SystmMsg dc.b "Laddar Program"
+ dc.b 0
+
+SInitTwo: move.b d0,$348000
+ rts no further system dependent code needed
+
+
+
+* New Code "UseDebug". Returns( Z-flag = TRUE/FALSE )
+* If you return Z = TRUE, BOOT ROM's general code does not intialize 
+* the DEBUGGER nor call it.
+
+UseDebug: move.b d0,$348000
+        andi #$FF-Zero,ccr return Z bit false
+	rts
+	
+
+ ends
+
+* end of file
+

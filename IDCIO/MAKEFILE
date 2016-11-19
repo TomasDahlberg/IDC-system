@@ -1,0 +1,112 @@
+idcio:      traphand.r util1.r util2.r util3.r idcio.l
+            l68 traphand.r util1.r util2.r util3.r -l=..\phyio\phyio.l -l=\os9c\lib\cio.l -l=\os9c\lib\clib.l -l=\os9c\lib\sys.l -O=idcio -a
+	    fixmod -uo=0.0 idcio
+            del idcion.l
+            copy util1.r/b+util2.r+util3.r idcion.l
+
+dbgIdcio:   dbgIdcio.c
+            xcc -ix dbgIdcio.c
+
+debugSkrift.r: debugSkrift.c
+            xcc -ixrs debugSkrift.c
+
+util1.r:    pid.r mstime.r datamodule.r redday.r rt_scan.r subrCaller.r downCount.r
+            del util1.r
+            copy pid.r/b+mstime.r+datamodule.r+redday.r+rt_scan.r+subrCaller.r+downCount.r util1.r
+            
+util2.r:    findmeta.r trap_screen.r var.r rand.r callDbg.r alarm.r rt_alarm.r initDM.r createDM.r debugSkrift.r
+            del util2.r
+            copy findmeta.r/b+trap_screen.r+var.r+rand.r+callDbg.r+alarm.r+rt_alarm.r+initDM.r+createDM.r+debugSkrift.r util2.r
+
+util3.r:    counter.r enter.r timer.r kurvab.r tvpump.r week.r net.r ent_cal.r incdec.r
+            del util3.r
+            copy counter.r/b+enter.r+timer.r+kurvab.r+tvpump.r+week.r+net.r+ent_cal.r+incdec.r util3.r
+
+traphand.r: traphand.a
+            r68 -O=traphand.r traphand.a
+
+idcio.l:    trapif.r disp.r
+            del idcio.l
+            copy trapif.r/b+disp.r idcio.l
+
+trapif.r:   trapif.a
+            r68 -O=trapif.r trapif.a
+
+disp.r:     disp.a
+            r68 -O=disp.r disp.a 
+
+subrCaller.r: subrCaller.c
+              xcc -ixrs subrCaller.c
+
+callDbg.r:  callDbg.c dbg.h
+            xcc -ixrs callDbg.c
+
+pid.r:      pid.c
+            xcc -ixrs pid.c -v=..\defs
+
+incdec.r:   incdec.c
+            xcc -ixrs incdec.c
+
+mstime.r:   mstime.c
+            xcc -ixrs mstime.c
+
+datamodule.r:   datamodule.c
+                xcc -ixrs datamodule.c
+
+redday.r:   redday.c
+            xcc -ixrs redday.c
+
+rt_scan.r: rt_scan.c
+                xcc -ixrs rt_scan.c
+
+
+findmeta.r: findmeta.c
+            xcc -ixrs findmeta.c
+
+trap_screen.r: trap_screen.c
+              xcc -ixrs trap_screen.c -v=..\defs
+
+var.r:      var.c
+            xcc -ixrs var.c
+
+rand.r:     rand.c
+            xcc -ixrs rand.c
+
+counter.r:  counter.c
+            xcc -ixrs counter.c
+
+enter.r:    enter.c
+            xcc -ixrs enter.c -v=..\defs
+
+timer.r:    timer.c
+            xcc -ixrs timer.c -v=..\defs
+
+kurvab.r:   kurvab.c
+            xcc -ixrs kurvab.c
+
+tvpump.r:   tvpump.c
+            xcc -ixrs tvpump.c
+
+week.r:     week.c
+            xcc -ixrs week.c
+
+net.r:      net.c
+            xcc -ixrs net.c -v=..\defs
+
+ent_cal.r:  ent_cal.c
+            xcc -ixrs ent_cal.c
+
+alarm.r:    alarm.c
+            xcc -ixrs alarm.c -v=..\defs
+
+rt_alarm.r: rt_alarm.c
+                 xcc -ixrs rt_alarm.c -v=..\defs
+
+initDM.r:   initDM.c
+            xcc -ixrs initDM.c -v=..\defs
+
+createDM.r:   createDM.c
+            xcc -ixrs createDM.c -v=..\defs
+
+downCount.r:  downCount.c
+              xcc -ixrs downCount.c -v=..\defs

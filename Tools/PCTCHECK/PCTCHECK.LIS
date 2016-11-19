@@ -1,0 +1,16 @@
+pctcheck, version 1.0
+Copyright 1992, IVT Electronic AB
+\ivtnew\huvud\LB12.pct     duc 4
+    - fel - variabeln saknas; 'Kalender_LB12'
+\ivtnew\huvud\LB61_B.pct   duc 8
+    - fel - variabeln saknas; 'Kalender_FF63'
+    - fel - variabeln saknas; 'Kalender_FF65'
+    - fel - variabeln saknas; 'Kalender_FF51'
+\ivtnew\huvud\LB62_B.pct   duc 9
+    - fel - variabeln saknas; 'kalender_LB64'
+    - fel - variabeln saknas; 'kalender_LB66'
+\ivtnew\huvud\LB72.pct     duc 5
+    - fel - variabeln saknas; ''
+
+Totalt 16 filer behandlade.
+Sammanlagt 7 variabler saknades f”rdelade p† 4 filer.

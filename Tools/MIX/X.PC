@@ -1,0 +1,17 @@
+13 1 P0_2_tidkanal & 13 2 P0_1_tidkanal & 13 3 P0_3_tidkanal & 13 4 P0_4_tidkanal & 13 5 Ljus_P0_2 & 13 6 P0_5_tidkanal
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+

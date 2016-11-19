@@ -1,0 +1,146 @@
+get_pulse
+get_pi
+get_pi_byte
+pi_uptime
+pi_measure
+sinc_uptime
+get_version
+set_code
+get_avail_nodes
+snpk_uptime
+snpk_version
+get_snpk_pass
+/* new functions as of 920930 */
+
+bypassSNPKrelay
+blockSNPKkeyboard
+setAlarmSNPK
+int getAlarmSNPK
+
+
+----------------------------------------------------------------------
+
+int get_pulse(module, ch)     /* read channel 0, 1, 2 or 3 */
+int module, ch;
+
+Returns the number of pulses since previous read.
+
+----------------------------------------------------------------------
+
+int get_pi(module, cmd)              /* send command and get 16-bits of data */
+int module, cmd;
+
+----------------------------------------------------------------------
+
+int get_pi_byte(module, cmd)         /* send command and get 8-bits of data */
+int module, cmd;
+
+----------------------------------------------------------------------
+
+void pi_uptime(module, days, hours, min, sec, tics, timestamp)
+int module, *days, *hours, *min, *sec, *tics, *timestamp;
+
+----------------------------------------------------------------------
+
+void pi_measure(module, chan, pedge, nedge, pper, nper, hpul, lpul)
+int module, chan; /* 0-3 */
+int *pedge, *nedge, *pper, *nper, *hpul, *lpul;
+
+----------------------------------------------------------------------
+
+void sinc_uptime(module, days, hours, min, sec, ms)
+int module, *days, *hours, *min, *sec, *ms;
+
+----------------------------------------------------------------------
+
+unsigned int get_version(module, ver, rev, type) /* returns version as vvrt 16-bits */
+int module, *ver, *rev, *type;
+
+----------------------------------------------------------------------
+
+set_code(module, node, codeNo, code)
+int module;
+int node;
+int codeNo, code;
+
+#define ALLKBADR 64
+    set_code(7, 2, 5, 4389,);   /* set code 5 to 4389 in node 2 */
+
+    set_code(7, ALLKBADR, 8, 8899); /* set code 8 to 8899 in all nodes */
+
+----------------------------------------------------------------------
+
+unsigned int get_avail_nodes(module)  /* returns 16bitmask for node 0 - 15 */
+int module;
+
+----------------------------------------------------------------------
+
+int snpk_uptime(module, node, days, hours, min, sec)
+int module, node, *days, *hours, *min, *sec;
+
+returns:
+          -1      Node not responding
+          0       Illegal datalength
+          1       Ok
+
+----------------------------------------------------------------------
+
+int snpk_version(module, node, ver, rev, type)
+int module, node, *ver, *rev, *type;
+
+returns:
+          -1      Node not responding
+          0       Illegal datalength
+          > 0     Version#, Ok
+
+  Returned version value is: 
+    printf("SINC version: %2x.%1x Type: %1x",
+                version>>8, (version&0xff)>>4, version&0x0f);
+
+----------------------------------------------------------------------
+
+int get_snpk_pass(module, node, code, pass, fail)
+int module, node, *code, *pass, *fail;
+
+returns:
+          -1      Node not responding
+          0       Illegal datalength
+          > 0     Ok, see below
+
+    HEX(ret >> 16)             = last entered code
+    ((ret >> 8) & 0xff) - 0x20 = no of pass
+    (ret & 0xff) - 0x20        = no of failed tries
+
+    printf("SNPK%d senaste kod: %02x%02x, antal pass: %d, felaktiga koder: %d",
+      node, data[0], data[1], data[2]-0x20, data[3]-0x20);
+
+----------------------------------------------------------------------
+bypassSNPKrelay(module, node, relay, open)
+int module;
+int node;
+int relay;    0 - 3
+int open;     0 == normal, 1 == aldrig aktiverad, 2 == alltid aktiverad
+
+----------------------------------------------------------------------
+blockSNPKkeyboard(module, node, block)
+int module;
+int node;
+int block;    0 == tangentbordet aktiverat, 1 == tangentbordet inaktiverat
+
+----------------------------------------------------------------------
+setAlarmSNPK(module, node, codeNo)
+int module;
+int node;
+int codeNo;     kodnummer till getAlarmSNPK()
+
+----------------------------------------------------------------------
+int getAlarmSNPK(module, node)
+int module, node;
+
+  returnerar
+   -1      Node not responding
+   0       Illegal datalength
+   > 0     antal passager
+
+----------------------------------------------------------------------
+

@@ -1,0 +1,153 @@
+ nam ncf
+ ttl Replacement file manager for /Nil
+****************************************************
+* Oct 29, 1992 - first version by kevin darling
+* public domain, no rights reserved, have fun!
+****************************************************
+* To compile:
+*    r68 ncf.a -qo=ncf.r
+*    l68 ncf.r -o=bootobjs/ncf -l=/dd/lib/sys.l
+*
+* ModEd /nil descriptor to use NCF instead of SCF
+****************************************************
+* Tested with 1000 I$Writes of 1000 bytes to /nil:
+*   SCF = 1 minute.  NCF = 1 second.
+* Tested with 1000 I$WritLns of 1000 bytes to /nil:
+*   SCF = 1 minute.  NCF = 3 seconds.
+****************************************************
+* If you really didn't want to emulate this much
+*   of SCF, you could skip doing all functions.
+* I kept I$WritLn return of amount of data written,
+*   and the SetStt Option call, just in case
+*   these mattered to some program (doubtful).
+****************************************************
+
+ use \os9c\defs\oskdefs.d
+
+typelang equ (FlMgr<<8)+Objct
+attrrev  equ (ReEnt+SupStat)<<8
+edition  equ 1
+
+ psect  nilman,typelang,attrrev,edition,0,Entry
+****************************************************
+Entry:
+ dc.w   Create-Entry                            
+ dc.w   Open-Entry                              
+ dc.w   MakDir-Entry                            
+ dc.w   ChgDir-Entry                            
+ dc.w   Delete-Entry                            
+ dc.w   Seek-Entry                              
+ dc.w   Read-Entry                              
+ dc.w   Write-Entry                             
+ dc.w   ReadLn-Entry                            
+ dc.w   WritLn-Entry                            
+ dc.w   GetStt-Entry                            
+ dc.w   SetStt-Entry                            
+ dc.w   Close-Entry                             
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Create:
+Open:
+ move.l PD_DEV(a1),d0   device table copy for user
+ move.l d0,PD_TBL(a1)
+
+ move.l R$a0(A5),A0     a0=pathname
+ os9    F$PrsNam        parse it
+ bcs.s  OpenError       ..quit on error
+ tst.b  d0              null end of name?
+ beq.s  OpenOkay        ..yes
+ cmp.b  #C$CR,d0        or CR?
+ beq.s  OpenOkay        ..yes
+ cmp.b  #$20,d0         or space?
+ bne.s  OpenError       ..no, must be name error!
+OpenOkay
+ move.l a1,R$a0(a5)     update passed pathname pointer
+ moveq  #0,d1
+ rts
+OpenError
+ move.w #E$BPNam,d1     bad pathname
+ ori    #Carry,ccr
+ rts
+
+****************************************************
+MakDir:
+ChgDir:
+Delete:
+ move.w #E$BMode,d1     bad mode
+ ori    #Carry,ccr      (chgdir/makdir never come)
+ rts
+
+****************************************************
+Seek:
+Close:
+ moveq  #0,d1           ignore these
+ rts
+
+****************************************************
+GetStt:
+ cmpi.w #SS_Opt,d0      option call is universal
+ bne.s  BadCall         IOMan copies them for us
+ rts                    exit with carry clear
+
+SetStt:
+ cmpi.w #SS_Opt,d0      option call is universal
+ bne.s  BadCall
+ move.l R$a0(a5),a0     point to user packet
+ lea    PD_OPT(a1),a2   and path desc options
+ moveq  #OPTCNT-1,d0    SCF option count
+SetOpt
+ move.b (a0)+,(a2)+     copy in case user wants later
+ dbra   d0,SetOpt
+ moveq  #0,d1
+ rts
+
+BadCall
+ move.w #E$UnkSvc,d1    unknown service calls
+ ori    #Carry,ccr
+ rts
+
+****************************************************
+Read:
+ReadLn:
+ move.w #E$EOF,d1       always end of file on reads
+ moveq  #0,d1
+ ori    #Carry,ccr
+ rts
+
+****************************************************
+Write:
+ moveq  #0,d1           dump everything written
+ rts
+
+****************************************************
+* For more speed, use Write routine above instead.
+* It should work for almost all programs.
+
+WritLn:
+ move.l R$a0(a5),a0     point to data
+ move.l R$d1(a5),d1     get max amt to output
+ beq.s  WritEnd
+ move.b PD_EOR(a1),d0   end-of-record char
+WritLoop
+ subq.l #1,d1
+ beq.s  WritEnd
+ cmp.b  (a0)+,d0        end of cooked write?
+ bne.s  WritLoop
+WritEnd
+ sub.l  d1,R$d1(a5)     return amount "written"
+ moveq  #0,d1           (desired minus "done")
+ rts
+
+ ends
+
+* end of file
+
+
+
+

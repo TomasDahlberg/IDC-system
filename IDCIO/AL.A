@@ -1,0 +1,199 @@
+ psect al_c,0,0,0,0,0
+ nam al_c
+* #define NO_OF_ALARMS 1
+* #include "../alarm.h"
+* /* alarm.h  1993-02-25 TD,  version 1.5 */
+* /*
+* 
+* /*
+* 
+* /*
+* #define NOT_INIT    0
+* #define INITIALIZED 1
+* 
+* #define NO_OF_ALARM_ENTRIES 100
+* 
+* struct _alarmEntry {
+*     char confirm, 
+*          disable,
+*          active,
+*          class;      /* class, 0 = A, 1 = B, 2=C, 3=D*/
+*     
+* #ifdef _V920914_1_40
+* #define ALARM_SEND_INIT           0x01
+* #define ALARM_SEND_ASSERT         0x02
+* #define ALARM_SEND_NEGATE         0x04
+* #define ALARM_SEND_CONFIRM        0x08
+* #define ALARM_SEND_DISABLE        0x10
+* #define ALARM_SEND_ENABLE         0x20
+* 
+*     unsigned char sendMask,
+*          sendStatus,
+*          enableSent,
+*          sendDummy;
+* #else
+*     unsigned char sendAssert,
+*          sendNegate,
+*          sendConfirm,
+*          sendDisable;
+* #endif         
+*     unsigned char assertSent,
+*          negateSent,
+*          confirmSent,
+*          disableSent; 
+*    
+*     short alarmNo, alarmIndex;
+*     long serialNo;
+*     long initTime, offTime, confirmTime;
+* 
+* #ifdef _V920914_1_40
+*     long disableTime, enableTime;         /* added 920921 */
+* #define SIZE_OF_ALARM_TEXT 72             /* 80->72, changed 920921 */
+* #else
+* #define SIZE_OF_ALARM_TEXT 80
+* #endif
+*     char string[SIZE_OF_ALARM_TEXT];
+* };
+* 
+* struct _alarmPt {    /*    statusType state;   */
+*   char active;
+*   char disable;
+*   long initTime;
+*   long serialNo;
+*   short alarmNo;            /* new 910719 */
+* };
+* 
+* struct _alarmModule {
+*   short int noOfAlarmEntries;
+*   long alarmListPtr;
+*   struct _alarmEntry alarmList[NO_OF_ALARM_ENTRIES];
+*   short int noOfAlarmPts;
+*   struct _alarmPt alarmPts[NO_OF_ALARMS];
+* };
+* 
+* 
+* struct _alarmModule2 {
+*   short int noOfAlarmPts;
+*   struct _alarmPt alarmPts[1];
+* };
+* 
+* /*      are these still valid ?, who uses them ? */
+* 
+* #define ALARM_CODE_LIGHT 0x101
+* #define ALARM_CODE_FLASH 0x102
+* #define ALARM_CODE_OFF   0x103
+* 
+* /*
+* int XmarkAlarm(aldm2, a, b, alarmNo, class)
+* struct _alarmModule2 *aldm2;
+* int a, b, alarmNo, class;
+* {
+ ttl XmarkAla
+XmarkAlarm:  link a5,#0
+ movem.l #_1!3,-(sp)
+ move.l #_3,d0 :6
+ bsr _stkcheck
+*   struct _alarmPt *al;
+*   
+*   al = &aldm2->alarmPts[a];
+ subq.l #4,sp :2
+ move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ move.l 4(sp),d1
+ addq.l #2,d1 :2
+ add.l d1,d0 :2
+ move.l d0,(sp) :2
+*   
+*   al->alarmNo = alarmNo;
+ movea.l (sp),a0 :2
+ move.w 10+_2(sp),10(a0) :6
+*   if (al->active == 1)
+*     return 0;
+ movea.l (sp),a0 :2
+ cmpi.b #1,(a0)
+ bne _6
+_5
+ moveq.l #0,d0 :2
+ addq.l #4,sp :2
+ bra _4
+* /*
+*   return _markAlarm(aldm2, a, b, alarmNo, class);
+_6
+ move.l 12+_2(sp),-(sp)
+ move.l 12+_2(sp),-(sp)
+ move.l 12+_2(sp),-(sp)
+ move.l 20(sp),d1
+ move.l 16(sp),d0
+ bsr _markAlarm
+ lea 12(sp),sp
+ addq.l #4,sp :2
+ bra _4
+* }
+ nop :2
+_4
+ movem.l -4(a5),#_1
+ unlk a5
+ rts :2
+_3 equ 0xffffffac :0
+_1 equ 0x00000100 :0
+_2 equ 0x00000014 :0
+* 
+* /* 
+* int XunmarkAlarm(aldm, aldm2, a, alarmNo)
+* struct _alarmModule *aldm;
+* struct _alarmModule2 *aldm2;
+* int a, alarmNo;
+* {
+ ttl XunmarkA
+XunmarkAlarm:  link a5,#0
+ movem.l #_7!3,-(sp)
+ move.l #_9,d0 :6
+ bsr _stkcheck
+*   int i;
+*   struct _alarmPt *al;
+*   
+*   al = &aldm2->alarmPts[a];
+ subq.l #8,sp :2
+ move.l 8+_8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ move.l 12(sp),d1
+ addq.l #2,d1 :2
+ add.l d1,d0 :2
+ move.l d0,(sp) :2
+*   
+*   al->active = 0;
+ movea.l (sp),a0 :2
+ clr.b (a0) :2
+*   if (!al->initTime)
+*     return 0;
+ movea.l (sp),a0 :2
+ tst.l 2(a0)
+ bne _12
+_11
+ moveq.l #0,d0 :2
+ addq.l #8,sp :2
+ bra _10
+* /*
+*   return _unmarkAlarm(aldm, aldm2, a, alarmNo);
+_12
+ move.l 12+_8(sp),-(sp)
+ move.l 12+_8(sp),-(sp)
+ move.l 20(sp),d1
+ move.l 16(sp),d0
+ bsr _unmarkAlarm
+ addq.l #8,sp :2
+ addq.l #8,sp :2
+ bra _10
+* }
+ nop :2
+_10
+ movem.l -4(a5),#_7
+ unlk a5
+ rts :2
+_9 equ 0xffffffac :0
+_7 equ 0x00000100 :0
+_8 equ 0x00000014 :0
+* 
+ ends

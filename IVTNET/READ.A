@@ -1,0 +1,172 @@
+ psect read_c,0,0,0,0,0
+ nam read_c
+* allNetRead(node, buf, size)
+* int node;
+* char *buf;
+* int size;
+* {
+ ttl allNetRe
+allNetRead:  link a5,#0
+ movem.l #_1!3,-(sp)
+ move.l #_3,d0 :6
+ bsr _stkcheck
+*   int nb, nr, mn, rest;
+*   static unsigned char bigBuf[1024];
+ vsect
+_5 ds.b 1024
+
+*   static int last;
+_6 ds.l 1
+
+*   
+*   nb = netpoll(node);
+ ends
+ lea -16(sp),sp
+ move.l 16(sp),d0
+ bsr netpoll
+ move.l d0,12(sp)
+*   if (nb > 0) {
+ tst.l 12(sp)
+ ble _8
+_7
+*     nr = netread(node, &bigBuf[last], nb);
+ move.l 12(sp),-(sp)
+ lea _5(a6),a0
+ move.l a0,d0 :2
+ add.l _6(a6),d0
+ move.l d0,d1 :2
+ move.l 20(sp),d0
+ bsr netread
+ addq.l #4,sp :2
+ move.l d0,8(sp)
+*     if (nr == -1)
+*       return -1;
+ moveq.l #-1,d0 :2
+ cmp.l 8(sp),d0
+ bne _10
+_9
+ moveq.l #-1,d0 :2
+ lea 16(sp),sp
+ bra _4
+*     last += nr;
+_10
+ move.l 8(sp),d0
+ add.l d0,_6(a6)
+*   }
+*   if (last == 0)
+_8
+*     return 0;
+ tst.l _6(a6)
+ bne _12
+_11
+ moveq.l #0,d0 :2
+ lea 16(sp),sp
+ bra _4
+*   mn = (last > size) ? size : last;
+_12
+ move.l _6(a6),d0
+ cmp.l 16+_2(sp),d0
+ ble _13
+_14
+ move.l 16+_2(sp),d0
+ bra _15
+_13
+ move.l _6(a6),d0
+_15
+ move.l d0,4(sp)
+*   memcpy(buf, bigBuf, mn);
+ move.l 4(sp),-(sp)
+ lea _5(a6),a0
+ move.l a0,d1 :2
+ move.l 24(sp),d0
+ bsr memcpy
+ addq.l #4,sp :2
+*   rest = last - mn;
+ move.l _6(a6),d0
+ sub.l 4(sp),d0
+ move.l d0,(sp) :2
+*   last -= mn;
+ move.l 4(sp),d0
+ sub.l d0,_6(a6)
+*   if (last)
+*     memmove(bigBuf, &bigBuf[mn], rest);
+ tst.l _6(a6)
+ beq _17
+_16
+ move.l (sp),-(sp) :2
+ lea _5(a6),a0
+ move.l a0,d0 :2
+ add.l 8(sp),d0
+ move.l d0,d1 :2
+ lea _5(a6),a0
+ move.l a0,d0 :2
+ bsr memmove
+ addq.l #4,sp :2
+*   return mn;
+_17
+ move.l 4(sp),d0
+ lea 16(sp),sp
+ bra _4
+* }
+ nop :2
+_4
+ movem.l -4(a5),#_1
+ unlk a5
+ rts :2
+_3 equ 0xffffffa8 :0
+_1 equ 0x00000100 :0
+_2 equ 0x00000014 :0
+* 
+* 
+* 
+* int ntread(node, buf, size)
+* int node;
+* unsigned char *buf;
+* int size;
+* {
+ ttl ntread
+ntread:  link a5,#0
+ movem.l #_18!3,-(sp)
+ move.l #_20,d0 :6
+ bsr _stkcheck
+*   int bt, pt, i;
+*   pt = 0;
+ lea -12(sp),sp
+ clr.l 4(sp)
+*   
+*   while ((bt = netread(node, &buf[pt], size)) > 0) {
+ bra _23
+_24
+*     size -= bt;
+ move.l 8(sp),d0
+ sub.l d0,12+_19(sp)
+*     pt += bt;
+ move.l 8(sp),d0
+ add.l d0,4(sp)
+*   }
+*   return pt;
+_23
+ move.l 12+_19(sp),-(sp)
+ move.l 20(sp),d0
+ add.l 8(sp),d0
+ move.l d0,d1 :2
+ move.l 16(sp),d0
+ bsr netread
+ addq.l #4,sp :2
+ move.l d0,8(sp)
+ bgt _24
+_22
+ move.l 4(sp),d0
+ lea 12(sp),sp
+ bra _21
+* }
+ nop :2
+_21
+ unlk a5
+ rts :2
+_20 equ 0xffffffac :0
+_18 equ 0x00000000 :0
+_19 equ 0x00000010 :0
+* 
+* 
+ ends

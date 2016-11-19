@@ -1,0 +1,123 @@
+* trapif.a  1992-06-17 TD,  version 1.3 */
+*
+* This file contains proprietary information of IVT Electronic AB.
+* Copying or reproduction without prior written approval is prohibited.
+*
+* This file is furnished under a license agreement or nondisclosure
+* agreement. The software may be used or copied only in accordance 
+* with the terms of the agreement.
+*
+* In no event will IVT Electronic AB, be liable for any lost revenue or
+* profits or other special, indirect and consequential damages, even if
+* IVT has been advised of the possibility of such damages.
+*
+* IVT Electronic AB
+* Box 996
+* 191 29 Sollentuna
+* Sweden
+*
+
+*
+* trapif.a
+* Copyright (C) 1991,1992 IVT Electronic AB.
+*
+
+
+          nam      Trapif
+          ttl      trap interface, c-callable routines translated to traps
+Prgrm     equ      1
+Objct     equ      1
+ReEnt     equ      128
+
+Edition   equ      1
+Typ_Lang  equ      (Prgrm<<8)+Objct
+Attr_Rev  equ      (ReEnt<<8)+0
+          psect    trapif,0,0,Edition,0,0,0
+
+TrapNum   equ      5
+TrapName  dc.b     "phyio",0
+
+initphyio: movem.l  d1/a0-a2,-(a7)
+          moveq    #TrapNum,d0
+          moveq    #0,d1
+          lea      TrapName(pc),a0
+          os9      F$TLink
+          bcs.s    exiterror
+          moveq    #0,d0
+exiterror movem.l  (a7)+,d1/a0-a2
+          rts
+
+lcdwr:	        tcall    TrapNum,0
+lcdwrite:	tcall    TrapNum,1
+lcdpositRel:	tcall    TrapNum,2
+lcdputs:	tcall    TrapNum,3
+lcdinit:	tcall    TrapNum,4
+lcdprintf:	tcall    TrapNum,5
+lcdhome:	tcall    TrapNum,6
+lcdpos:	        tcall    TrapNum,7
+led:	        tcall    TrapNum,8
+flashLed:	tcall    TrapNum,9
+keyDown:	tcall    TrapNum,10
+key:	        tcall    TrapNum,11
+getKey:	        tcall    TrapNum,12
+lcddefine:	tcall    TrapNum,13
+lcdcld:	        tcall    TrapNum,14
+lcdcld_through_cache:	
+                tcall    TrapNum,15
+lcdsetWrap:	tcall    TrapNum,16
+lcdsetCache:	tcall    TrapNum,17
+lcdsetCacheCursor:
+          	tcall    TrapNum,18
+lcdcursorOn:    tcall    TrapNum,19
+lcdcursorOff:   tcall    TrapNum,20
+updateLed:      tcall    TrapNum,21
+lcdcontrol:     tcall    TrapNum,22
+get_ad:       	tcall    TrapNum,23
+put_da:        	tcall    TrapNum,24
+get_di:        	tcall    TrapNum,25
+put_do:        	tcall    TrapNum,26
+lcdshowdirections:
+                tcall    TrapNum,27
+get_batt_voltage:
+                tcall    TrapNum,28
+opto_power:     tcall    TrapNum,29
+get_di_SR:      tcall    TrapNum,30
+lcdSetSelect:   tcall    TrapNum,31
+*
+* ptrprintf:      tcall    TrapNum,32
+*
+lcdclearCheckMap: tcall   TrapNum,32
+lcdflushCheckMap: tcall   TrapNum,33
+
+get_pulse:        tcall  TrapNum,34
+get_pi:           tcall  TrapNum,35
+get_pi_byte:      tcall  TrapNum,36
+pi_uptime:        tcall  TrapNum,37
+pi_measure:       tcall  TrapNum,38
+sinc_uptime:      tcall  TrapNum,39
+get_version:      tcall  TrapNum,40
+setCode:          tcall  TrapNum,41
+get_avail_nodes:  tcall  TrapNum,42
+snpk_uptime:      tcall  TrapNum,43
+snpk_version:     tcall  TrapNum,44
+get_snpk_pass:    tcall  TrapNum,45
+clearCode:        tcall  TrapNum,46
+clearAllCodes:    tcall  TrapNum,47
+getCode:          tcall  TrapNum,48
+lcdSetScreenContext:
+                  tcall  TrapNum,49
+keyWasDown:       tcall  TrapNum,50
+getSNPKStatus:    tcall  TrapNum,51
+setSafeCode:      tcall  TrapNum,52
+lcdGetScreen:     tcall  TrapNum,53
+lcdPutScreen:     tcall  TrapNum,54
+makeSNPKrelay:    tcall  TrapNum,55
+
+bypassSNPKrelay:  tcall  TrapNum,56
+blockSNPKkeyboard:tcall  TrapNum,57
+setAlarmSNPK:     tcall  TrapNum,58
+getAlarmSNPK:     tcall  TrapNum,59
+getPhyioError:    tcall  TrapNum,60
+PT100_Res:        tcall  TrapNum,61
+
+           ends

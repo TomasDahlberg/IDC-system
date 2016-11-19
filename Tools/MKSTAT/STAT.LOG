@@ -1,0 +1,250 @@
+
+$ SaveIdx     @ 3ffc0 = 3812
+ReadIdx PC0 @ 3ffc2 = 3812 (enable)
+ReadIdx PC1 @ 3ffc4 = 3773 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+Show next sample ?: (n) Stat 'Fj{rr':
+  0: buff 9, intervall 3600, duc 3, var GT12_AImv
+  1: buff 9, intervall 3600, duc 3, var GT11_AImv
+  2: buff 9, intervall 3600, duc 3, var energi_MQ11
+  3: buff 9, intervall 3600, duc 3, var mangd_MQ21
+  4: buff 9, intervall 3600, duc 3, var mangd_VM10
+  5: buff 9, intervall 3600, duc 3, var energi_MQ12
+  6: buff 9, intervall 3600, duc 3, var GT33_AImv
+  7: buff 9, intervall 3600, duc 3, var GT21_SWmv
+  8: buff 9, intervall 3600, duc 3, var GT13_AImv
+  9: buff 9, intervall 3600, duc 3, var GT14_AImv
+ 10: buff 9, intervall 3600, duc 3, var RC2_RGut
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'stadsvatten':
+  0: buff 7, intervall 3600, duc 3, var mangd_VM11
+  1: buff 7, intervall 3600, duc 3, var GT51_AImv
+  2: buff 7, intervall 3600, duc 3, var GT61_AImv
+  3: buff 7, intervall 3600, duc 3, var SV1_RGut
+  4: buff 7, intervall 3600, duc 3, var SV8_RGut
+  5: - empty -
+  6: - empty -
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'Fastighetsel':
+  0: buff 16, intervall 3600, duc 0, var Stat_Som_Log_MQ21
+  1: buff 16, intervall 3600, duc 0, var Stat_Som_Hog_MQ21
+  2: buff 16, intervall 3600, duc 0, var Stat_Vin_Log_MQ21
+  3: buff 16, intervall 3600, duc 0, var Stat_Vin_Hog_MQ21
+  4: - empty -
+  5: - empty -
+  6: - empty -
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'El_kylcentral':
+  0: buff 18, intervall 3600, duc 0, var Stat_Som_Log_MQ11
+  1: buff 18, intervall 3600, duc 0, var Stat_Som_Hog_MQ11
+  2: buff 18, intervall 3600, duc 0, var Stat_Vin_Hog_MQ11
+  3: buff 18, intervall 3600, duc 0, var Stat_Vin_Log_MQ11
+  4: buff 8, intervall 3600, duc 2, var KM1SV3_RGut
+  5: buff 8, intervall 3600, duc 2, var KM1P1AB_RGut
+  6: buff 8, intervall 3600, duc 2, var GT71KB1_AImv
+  7: buff 8, intervall 3600, duc 12, var KB5_energi
+  8: buff 8, intervall 3600, duc 12, var KB5_mangdsum
+  9: buff 8, intervall 3600, duc 12, var KB5GT41_AImv
+ 10: buff 8, intervall 3600, duc 12, var KB5GT42_AImv
+ 11: buff 8, intervall 3600, duc 2, var GT42KB1_AImv
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'KALLVATTEN':
+  0: buff 5, intervall 3600, duc 2, var mangd_VM11
+  1: buff 10, intervall 86400, duc 2, var mangd_VM11
+  2: buff 12, intervall 2678400, duc 2, var mangd_VM11
+  3: - empty -
+  4: - empty -
+  5: - empty -
+  6: - empty -
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'luftbeh1':
+  0: buff 20, intervall 3600, duc 5, var GT40_sp
+  1: buff 20, intervall 3600, duc 5, var GP10_AImv
+  2: buff 20, intervall 3600, duc 5, var GT40_mv
+  3: buff 20, intervall 3600, duc 5, var SV1_RGut
+  4: buff 20, intervall 3600, duc 5, var GP60_AImv
+  5: buff 20, intervall 3600, duc 5, var GT60_AImv
+  6: buff 20, intervall 3600, duc 5, var SV2_RGut
+  7: - empty -
+  8: - empty -
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 'manadsvarde':
+  0: buff 10, intervall 86400, duc 12, var KB5_mangdsum
+  1: buff 10, intervall 86400, duc 12, var KB5_energi
+  2: buff 10, intervall 86400, duc 12, var VM11_mangd
+  3: buff 10, intervall 86400, duc 3, var mangd_VM10
+  4: buff 10, intervall 86400, duc 3, var energi_MQ12
+  5: buff 10, intervall 86400, duc 3, var energi_MQ11
+  6: buff 10, intervall 86400, duc 3, var mangd_MQ21
+  7: buff 10, intervall 86400, duc 3, var mangd_VM11
+  8: buff 10, intervall 86400, duc 2, var mangd_VM11
+  9: - empty -
+  10: - empty -
+  11: - empty -
+  12: - empty -
+  13: - empty -
+  14: - empty -
+  15: - empty -
+  16: - empty -
+  17: - empty -
+  18: - empty -
+  19: - empty -
+  20: - empty -
+  21: - empty -
+  22: - empty -
+  23: - empty -
+  24: - empty -
+  25: - empty -
+  26: - empty -
+  27: - empty -
+  28: - empty -
+  29: - empty -
+Stat 7 empty
+SaveIdx     @ 3ffc0 = 3812
+ReadIdx PC0 @ 3ffc2 = 3812 (enable)
+ReadIdx PC1 @ 3ffc4 = 3773 (enable)
+1. Initiera metadata och pekare
+2. Lagra/modifera metadata
+3. Visa samtlig metadata
+4. Visa insamlad data
+5. Radera insamlad data
+6. Disable/enable statistik till en viss pc
+7. Modifiera pekare
+0. Avsluta
+
+$ SET PCTIME "10:27:45"
+0
+
+OK
+
+OK
+
+OK

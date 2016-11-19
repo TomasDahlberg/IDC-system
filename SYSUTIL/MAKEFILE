@@ -1,0 +1,36 @@
+sysutil:    RELS\traphand.r util1.r sysutil.l
+            l68 traphand.r util1.r -l=lib.l -l=syslib.l -O=sysutil -a
+	    fixmod sysutil -ua=a003
+	    fixmod sysutil -uo=0.0
+            del sysutiln.l
+            copy util1.r/b sysutiln.l
+
+
+util1.r:    RELS\rs232.r RELS\var.r RELS\ver.r RELS\probe.r
+            del util1.r
+            copy RELS\rs232.r/b+RELS\var.r+RELS\ver.r+RELS\probe.r util1.r
+	    copy \idc\lib\idcio.l/b+\idc\lib\phyio.l lib.l
+	    copy \os9c\lib\cio.l/b+\os9c\lib\clib.l+\os9c\lib\sys.l syslib.l
+            
+RELS\rs232.r:   rs232.c
+            xcc -ixsv=.. -R=RELS rs232.c
+
+RELS\probe.r:   probe.c
+            xcc -ixsv=.. -R=RELS probe.c
+
+RELS\ver.r:      ver.a
+            r68 -o=RELS\ver.r ver.a
+
+RELS\traphand.r: traphand.a
+            r68 -O=RELS\traphand.r traphand.a
+
+sysutil.l:  RELS\trapif.r
+            del sysutil.l
+            move RELS\trapif.r sysutil.l
+
+RELS\trapif.r:   trapif.a
+            r68 -O=RELS\trapif.r trapif.a
+
+RELS\var.r:      var.c
+            xcc -ixs -r=RELS var.c
+

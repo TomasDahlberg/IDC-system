@@ -1,0 +1,38 @@
+0Aq1_1 = 2
+0Aq1_2 = 8.4
+0Aq1_3 = 0
+0Aq1_4 = 0
+0Aq2_1 = 2
+0Aq2_2 = 7.6
+0Aq2_3 = 0
+0Aq2_4 = 0
+0Aterstall = 1
+0Auto = 1
+calendar B_larm_kalender = {
+Mo,Tu,We,Th,Fr,Sa,Su, !        ! 08.00 - 18.00 !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+}
+0B_larm_tidkanal = 1
+0Brandcentral_fel = 1
+0Brandlarm = 1
+calendar C_larm_kalender = {
+Mo,Tu,We,Th,Fr,  ,  , ! Black  ! 07.00 - 16.00 !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+}
+0C_larm_tidkanal = 1

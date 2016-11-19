@@ -1,0 +1,204 @@
+1
+xxx:Hour 123.12
+  1:AS2_GT3            = 1.43625
+  2:AS2_GT3_L          = 1.48627
+  3:AS2_GT3_fel        = 0
+  4:AS2_GT3_filt       = 10
+  5:AS2_GT3_korr       = 0
+  6:AS2_motorskydd     = 0
+  7:AS2_omkoppl_fel    = 1
+  8:AS2_sakring        = 0
+  9:Aq7_1              = 5.32083
+ 10:Aq7_2              = 0
+ 11:Aq7_3              = 0
+ 12:Aq7_4              = 0
+ 13:Day                = 7
+ 14:Daycolor           = 1
+ 15:Hour               = 10
+ 16:KB_EXP             = 0
+ 17:KB_GT4_2           = 7.52299
+ 18:KB_GT4_2_L         = 7.50024
+ 19:KB_GT4_2_fel       = 0
+ 20:KB_GT4_2_filt      = 5
+ 21:KB_GT4_2_hog_1     = 10
+ 22:KB_GT4_2_hog_2     = 14
+ 23:KB_GT4_2_korr      = 0
+ 24:KB_GT4_2delay      = 5
+ 25:KB_GT4_3           = 8.82723
+ 26:KB_GT4_3_L         = 8.77626
+ 27:KB_GT4_3_fel       = 0
+ 28:KB_GT4_3_filt      = 5
+ 29:KB_GT4_3_korr      = 0
+ 30:KB_Pump_A_drifttid = 1193.07
+ 31:KB_Pump_A_ind      = 1
+ 32:KB_Pump_A_larm     = 0
+ 33:KB_Pump_A_styr     = 1
+ 34:KB_Pump_B_drifttid = 1217.83
+ 35:KB_Pump_B_ind      = 0
+ 36:KB_Pump_B_larm     = 0
+ 37:KB_Pump_B_styr     = 0
+ 38:KB_aktiv_pump      = 0
+ 39:KB_enable          = 1
+ 40:KB_olddayno        = 2
+ 41:KB_overlapp        = 10
+ 42:KB_status          = 1
+ 43:KMK_1_Ksvar        = 0
+ 44:KMK_1_driftfel     = 0
+ 45:KMK_1_drifttid     = 332.198
+ 46:KMK_1_styr         = 0
+ 47:KMK_2_Ksvar        = 0
+ 48:KMK_2_driftfel     = 0
+ 49:KMK_2_drifttid     = 322.057
+ 50:KMK_2_styr         = 0
+ 51:KMK_3_Ksvar        = 0
+ 52:KMK_3_driftfel     = 0
+ 53:KMK_3_drifttid     = 290.503
+ 54:KMK_3_styr         = 0
+ 55:KMK_4_Ksvar        = 0
+ 56:KMK_4_driftfel     = 0
+ 57:KMK_4_drifttid     = 338.753
+ 58:KMK_4_styr         = 0
+ 59:KMK_5_Ksvar        = 0
+ 60:KMK_5_driftfel     = 0
+ 61:KMK_5_drifttid     = 374.278
+ 62:KMK_5_styr         = 0
+ 63:KMK_6_Ksvar        = 0
+ 64:KMK_6_driftfel     = 0
+ 65:KMK_6_drifttid     = 339.573
+ 66:KMK_6_styr         = 0
+ 67:KMK_larm           = 0
+ 68:KMK_motorskydd     = 0
+ 69:KMK_sakring        = 0
+ 70:KM_EXP             = 0
+ 71:KM_GT1             = 37.3834
+ 72:KM_GT1_L           = 37.2531
+ 73:KM_GT1_ber_bv      = 37
+ 74:KM_GT1_fel         = 0
+ 75:KM_GT1_filt        = 3
+ 76:KM_GT1_hog         = 40
+ 77:KM_GT1_hog_larm    = 0
+ 78:KM_GT1_korr        = 0
+ 79:KM_GT1_kurv       
+                      [0] = 37
+                      [1] = 37
+                      [2] = 37
+                      [3] = 37
+                      [4] = 37
+ 80:KM_GT1_kurv_0      = 37
+ 81:KM_GT1_kurv_1      = 37
+ 82:KM_GT1_kurv_2      = 37
+ 83:KM_GT1_kurv_3      = 37
+ 84:KM_GT1_kurv_4      = 37
+ 85:KM_GT1_max_bv      = 37
+ 86:KM_GT1_min_bv      = 37
+ 87:KM_GT1delay        = 5
+ 88:KM_GT4_1           = 43.8985
+ 89:KM_GT4_1_L         = 43.9661
+ 90:KM_GT4_1_fel       = 0
+ 91:KM_GT4_1_filt      = 5
+ 92:KM_GT4_1_korr      = 0
+ 93:KM_Pump_A_drifttid = 1193.06
+ 94:KM_Pump_A_ind      = 1
+ 95:KM_Pump_A_larm     = 0
+ 96:KM_Pump_A_styr     = 1
+ 97:KM_Pump_B_drifttid = 1217.84
+ 98:KM_Pump_B_ind      = 0
+ 99:KM_Pump_B_larm     = 0
+100:KM_Pump_B_styr     = 0
+101:KM_SV1             = 54.8226
+102:KM_SV1_D_tid       = 0
+103:KM_SV1_I_tid       = 20
+104:KM_SV1_P_konst     = 5
+105:KM_SV1_bv          = 50
+106:KM_aktiv_pump      = 0
+107:KM_enable          = 1
+108:KM_flakt_D_tid     = 0
+109:KM_flakt_I_tid     = 50
+110:KM_flakt_P_konst   = 0.5
+111:KM_flakt_reg       = 5.7093
+112:KM_forst           = 2
+113:KM_oldday          = 3
+114:KM_olddayno        = 2
+115:KM_overlapp        = 10
+116:KM_status          = 1
+117:KM_steg            = 0
+118:KP_GL5             = 0
+119:KP_motorskydd      = 0
+120:Kort_1             = 5
+121:Kort_2             = 8
+122:Kort_3             = 0
+123:Minute             = 18
+124:Month              = 1
+125:Pstopp_motion_tid  = 12
+126:Second             = 36
+127:Sleep              = 1
+128:Vi_Set_Day         = -1
+129:Vi_Set_Hour        = -1
+130:Vi_Set_Minute      = -1
+131:Vi_Set_Month       = -1
+132:Vi_Set_Year        = -1
+133:Weekday            = 3
+134:Weekno             = 1
+135:Weekyear           = 93
+136:Year               = 93
+149:forsta_gangen      = 0
+152:globalAlarmMask_A  = 7
+153:globalAlarmMask_B  = 7
+154:globalAlarmMask_C  = 7
+155:globalAlarmMask_D  = 7
+159:level              = 2
+160:level1             = 1111
+161:level2             = 2222
+162:level3             = 3333
+163:level4             = 4444
+164:level5             = 163
+165:noOfAck_A          = 0
+166:noOfAck_B          = 0
+167:noOfAck_C          = 0
+168:noOfAck_D          = 0
+169:noOfNak_A          = 0
+170:noOfNak_B          = 0
+171:noOfNak_C          = 0
+172:noOfNak_D          = 0
+177:powerup            = 0
+178:service            = 0
+179:serviceLed         = 0
+184:summerStart        = 0
+185:telephonePC       
+                      [0] = 272245
+                      [1] = 115475
+                      [2] = 0
+                      [3] = 0
+                      [4] = 0
+                      [5] = 0
+                      [6] = 0
+                      [7] = 0
+186:telephonePC_area  
+                      [0] = 19
+                      [1] = 19
+                      [2] = 0
+                      [3] = 0
+                      [4] = 0
+                      [5] = 0
+                      [6] = 0
+                      [7] = 0
+191:utekurv           
+                      [0] = -15
+                      [1] = -5
+                      [2] = 5
+                      [3] = 15
+                      [4] = 25
+192:winterStart        = 0
+
+1. variable:  list all vars
+2.            change variable
+3.            lock/unlock all I/O bound variables
+4. alarm:     list all disables
+5.            enable/disable alarm
+6.            enable/disable all alarms
+7. timer:     list all timers
+8.            change delay of timer
+9.            clear all timers
+0. quit
+
+Select an item : 

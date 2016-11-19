@@ -1,0 +1,798 @@
+ nam scf
+ ttl scf - Sequential File Manager
+****************************************************
+* To compile:
+*    r68 ncf.a -qo=ncf.r
+*    l68 ncf.r -o=bootobjs/ncf -l=/dd/lib/sys.l
+
+ use oskdefs.d
+
+typelang equ (FlMgr<<8)+Objct
+attrrev  equ (ReEnt+SupStat)<<8
+edition  equ 1
+
+ psect  nilman,typelang,attrrev,edition,0,Entry
+
+* 00000030 00000080  offset to execution entry point
+* 00000034 00000000  offset to exception entry 
+* 00000038 00000000  data storage requirement
+
+  dc.b $b0,$bd,$b0,$bd
+  dc.b ">>>>>>>>>>>>>>>>from the disk of Robert Doggett <<<<<<<<<<<<<<<<"
+****************************************************
+
+Entry:
+ dc.w   Create-Entry                            001a + 80
+ dc.w   Open-Entry                              001a
+ dc.w   MakDir-Entry                            0112
+ dc.w   ChgDir-Entry                            0112
+ dc.w   Delete-Entry                            010a
+ dc.w   Seek-Entry                              0104
+ dc.w   Read-Entry                              028e
+ dc.w   Write-Entry                             05ba
+ dc.w   ReadLn-Entry                            02f2
+ dc.w   WritLn-Entry                            05b4
+ dc.w   GetStt-Entry                            01d2
+ dc.w   SetStt-Entry                            023e
+ dc.w   Close-Entry                             011e
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Create:
+Open:
+009a
+	bsr        label_51a
+	clr.b      50(a1)
+	movea.l    PD_DEV(a1),a0	device table copy for user, 4(a1),a0
+	move.l     a0,PD_TBL(a1)	a0,156(a1)
+	move.l     a1,-(a7)		push path desc
+	movea.l    R$a0(a5),a0		32(a5),a0,  a0 = pathname
+	os9        F$PrsNam		parse it 
+	bcs        OpenError		..open error
+	tst.b      d0			null end of name ?
+	beq.s      OpenOkay		..yes
+	cmp.b      #$d,d0		or CR?
+	beq.s      OpenOkay		..yes
+	cmp.b      #$20,d0		or space?
+	bne        OpenError2		..no, must be name error!
+OpenOkay
+	movea.l    a1,a0		
+	move.l     #$100,d0		
+	os9        F$SRqMem		allocate buffer of 256 bytes memory
+	movea.l    (a7)+,a1		pop path descriptor
+	bcs        label_196		couldn't allocate, E$MemFul/E$NoRAM
+	move.l     a0,R$a0(a5)		a0,32(a5), update users pathname pointer
+	move.l     a2,PD_BUF(a1)	14(a1),	store buffer address
+	moveq      #13,d2
+	move.w     #$fe,d1
+	bsr.s      label_10c
+lbl_ec	dc.w $621B
+
+000000ee 596b6565  subq.w     #4,25957(a3)
+000000f2 2a11      move.l     (a1),d5
+000000f4 1c0d      move.b     a5,d6
+000000f6 0f42      bchg       d7,d2
+000000f8 0c6c626d
+         3113      cmpi.w     #$626d,12563(a4)
+000000fe 0f0b490c  movep.w    18700(a3),d7
+00000102 727c      moveq      #124,d1
+00000104 6a2b      bpl.s      $131
+00000106 08000211  btst       #$211,d0
+0000010a 0079205f
+
+label_10c
+	moveq      #0,d2
+label_110
+	move.b     (a0)+,d0
+	eor.b      d0,d2
+	move.b     d2,(a2)+
+	cmpi.b     #$d,d2
+	dbeq       d1,label_110
+label_11e
+	move.b     d2,(a2)+
+	dbf        d1,label_11e
+
+	movea.l    PD_DEV(a1),a2	get device table entry address
+	movea.l    V$STAT(a2),a0	get device static storage
+	move.b     PD_PAG(a1),51(a0)	copy page length value to ... (stat stor?) 136->51
+	movea.l    V$DESC(a2),a0	get device descriptor module address
+	move.w     PD_D2P(a1),d2	get offset to output device name, (150)
+	beq.s      label_152		same as input (?)
+	adda.w     d2,a0		and add descriptor module address
+	move.b     PD_MOD(a1),d0	mode flags the file was opened
+	bmi.s      Delete		$18a
+	andi.b     #$12,d0
+	os9        I$Attach		ensure initialized I/O device
+	bcs.s      label_196
+	move.l     a2,42(a1)		dev.table entry stored in our static area
+label_152
+00000152 303c002a  move.w     #$2a,d0
+00000156 4aa90016  tst.l      22(a1)
+0000015a 670a      beq.s      label_166
+0000015c 24690016  movea.l    22(a1),a2
+00000160 336a0094
+         0094      move.w     148(a2),148(a1)
+label_166
+00000166 2f2d0004  move.l     4(a5),-(a7)
+0000016a 2b400004  move.l     d0,4(a5)
+0000016e 61000162  bsr        label_2d2
+00000172 40c0      move       sr,d0
+00000174 2b5f0004  move.l     (a7)+,4(a5)
+00000178 02400001  andi.w     #$1,d0
+0000017c 6706      beq.s      $184
+0000017e 0c4100d0  cmpi.w     #$d0,d1
+00000182 6612      bne.s      label_196
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Seek:
+        rts       				$0184
+OpenError
+	movea.l    (a7)+,a1	00000186 
+	rts       
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Delete:
+	move.w     #E$BMode,d1		bad mode
+0000018e 6006      bra.s      label_196
+OpenError2
+00000190 225f      movea.l    (a7)+,a1
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+MakDir:
+ChgDir:
+00000192 323c00d7  move.w     #E$BPNam,d1		bad pathname ?
+label_196
+	bsr.s      $1d8			or E$BMode bad mode?
+00000198 003c0001  ori        #Carry,ccr
+0000019c 4e75      rts       
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Close:
+	lea        P$Path(a4),a0	get address of system path table for process
+	moveq      #31,d0		max 31+1 = 32 user paths open concurrently
+	move.w     PD_PD(a1),d1		get system path number for this path
+label_1a8
+	cmp.w      (a0)+,d1		compare with all of users 32 possible paths
+	dbeq       d0,label_1a8		until we found it
+	beq.s      label_1c0
+
+000001b0 701b      moveq      #27,d0
+000001b2 61b2      bsr.s      label_166
+000001b4 20690004  movea.l    PD_DEV(a1),a0
+000001b8 614a      bsr.s      label_204
+000001ba 2069002a  movea.l    42(a1),a0
+000001be 6144      bsr.s      label_204
+label_1c0
+	tst.w      PD_COUNT(a1)		check if last duplicated path
+	bne.s      label_202		no there's more, don't close it and we are finished here
+000001c6 702b      moveq      #43,d0
+000001c8 619c      bsr.s      label_166
+000001ca 4aa9002a  tst.l      42(a1)
+000001ce 6708      beq.s      $1d8
+000001d0 2469002a  movea.l    42(a1),a2
+000001d4 4e400081  os9        I$Detach		terminate usage of I/O device
+000001d8 4aa9000e  tst.l      14(a1)
+000001dc 6724      beq.s      label_202
+000001de 2469000e  movea.l    14(a1),a2
+000001e2 203c0000
+         0100      move.l     #$100,d0
+000001e8 42a9000e  clr.l      14(a1)
+000001ec 2f0b      move.l     a3,-(a7)
+000001ee 266e03a4  movea.l    932(a6),a3
+000001f2 487a000c  pea        12(pc)
+000001f6 2f2b00a4  move.l     164(a3),-(a7)
+000001fa 266b04a4  movea.l    1188(a3),a3
+000001fe 4e75      rts       
+
+00000200 265f      movea.l    (a7)+,a3
+label_202
+	rts       
+
+label_204
+	move.l     a0,d0
+00000206 67fa      beq.s      label_202
+00000208 30290008  move.w     8(a1),d0
+0000020c 32290000  move.w     0(a1),d1
+00000210 20680004  movea.l    4(a0),a0
+00000214 b0680004  cmp.w      4(a0),d0
+00000218 6636      bne.s      $250
+0000021a 48e7c0c0  movem.l    d0-d1a0-a1,-(a7)
+0000021e 4a69001a  tst.w      26(a1)
+00000222 6720      beq.s      $244
+00000224 302c0002  move.w     2(a4),d0
+00000228 3f400002  move.w     d0,2(a7)
+0000022c 4e400037  os9        F$GProcP		get process d0's descriptor addr
+00000230 6512      bcs.s      $244
+00000232 322f0006  move.w     6(a7),d1
+00000236 41e90168  lea        360(a1),a0
+0000023a 701f      moveq      #31,d0
+0000023c b258      cmp.w      (a0)+,d1
+0000023e 57c8fffc  dbeq       d0,$23c
+00000242 6704      beq.s      $248
+00000244 426f0002  clr.w      2(a7)
+00000248 4cdf0303  movem.w    (a7)+,d0-d1a0-a1
+0000024c 31400004  move.w     d0,4(a0)
+00000250 4e75      rts       
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+GetStt:
+	move.w     R$d1.w(a5),d0	6(a5)
+	cmpi.w     #SS_Opt,d0		option call is universal, #$0,d0
+	bne.s      Drv_GetStt		IOMan copies them for us, BadCall ?
+	bsr.s      Drv_GetStt		dispatch, call drivers getstat
+	bcc.s      label_268
+00000260 b27c00d0  cmp.w      #$d0,d1
+00000264 660000a2  bne        $308
+label_268
+00000268 2a69000a  movea.l    10(a1),a5
+0000026c 206d0020  movea.l    32(a5),a0
+00000270 30290094  move.w     148(a1),d0
+00000274 b0680014  cmp.w      20(a0),d0
+00000278 6742      beq.s      $2bc
+0000027a 31400014  move.w     d0,20(a0)
+0000027e 24690004  movea.l    4(a1),a2
+00000282 246a0004  movea.l    4(a2),a2
+00000286 45eafff4  lea        -12(a2),a2
+0000028a 246a0016  movea.l    22(a2),a2
+0000028e 35400094  move.w     d0,148(a2)
+00000292 4aaa0016  tst.l      22(a2)
+00000296 66f2      bne.s      $28a
+00000298 4e75      rts       
+
+*
+*	dispatch routine to call drivers getstat routine
+*
+label_29a
+Drv_GetStt
+	moveq      #6,d1		getstat
+dispatch_29c
+	movea.l    PD_DEV(a1),a0	get device table entry address
+	movea.l    V$STAT(a0),a2	get device static storage
+	movea.l    V$DRVR(a0),a0	get driver module address
+	add.l      M$Exec(a0),d1	add offset to routine offset table
+	move.w     0(a0,d1.w),d1	get offset to specific routine
+	movem.l    a1//a4-a6,-(a7)	push registers
+	jsr        0(a0,d1.w)		and call routine (getstat/setstat)
+	movem.w    (a7)+,a1//a4-a6	and restore registers
+	rts       
+
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+SetStt:
+000002be 61000302  bsr        label_5c2
+000002c2 6548      bcs.s      label_30c
+000002c4 610c      bsr.s      label_2d2
+000002c6 40e7      move       sr,-(a7)
+000002c8 3f01      move.w     d1,-(a7)
+000002ca 6100022c  bsr        $4f8
+000002ce 321f      move.w     (a7)+,d1
+000002d0 4e77      rtr       
+
+label_2d2
+	move.w     6(a5),d0
+000002d6 7208      moveq      #8,d1		setstat
+000002d8 0c400000  cmpi.w     #$0,d0
+000002dc 66be      bne.s      dispatch_29c
+000002de 206d0020  movea.l    32(a5),a0
+000002e2 30280014  move.w     20(a0),d0
+000002e6 b0690094  cmp.w      148(a1),d0
+000002ea 6602      bne.s      $2ee
+000002ec 6190      bsr.s      $27e
+000002ee 45e90080  lea        128(a1),a2
+000002f2 701b      moveq      #27,d0
+000002f4 14d8      move.b     (a0)+,(a2)+
+000002f6 51c8fffc  dbf        d0,$2f4
+000002fa 303c0000  move.w     #$0,d0
+000002fe 619c      bsr.s      dispatch_29c	dispatch 2
+00000300 640a      bcc.s      label_30c
+00000302 b27c00d0  cmp.w      #$d0,d1
+00000306 6704      beq.s      label_30c
+00000308 003c0001  ori        #$1,ccr
+label_30c
+	rts       
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Read:
+0000030e 610002b2  bsr        label_5c2
+00000312 65f8      bcs.s      label_30c
+00000314 52290030  addq.b     #1,48(a1)
+00000318 242d0004  move.l     4(a5),d2
+0000031c 6750      beq.s      $36e
+0000031e 5382      subq.l     #1,d2
+00000320 246d0020  movea.l    32(a5),a2
+00000324 61000180  bsr        label_4a6
+00000328 650e      bcs.s      $338
+0000032a 4a00      tst.b      d0
+0000032c 6726      beq.s      $354
+0000032e b029008c  cmp.b      140(a1),d0
+00000332 6616      bne.s      $34a
+00000334 323c00d3  move.w     #$d3,d1
+00000338 3f01      move.w     d1,-(a7)
+0000033a 6128      bsr.s      $364
+0000033c 321f      move.w     (a7)+,d1
+0000033e 003c0001  ori        #$1,ccr
+00000342 4e75      rts
+       
+00000344 61000160  bsr        label_4a6
+00000348 65ee      bcs.s      $338
+0000034a 4a290084  tst.b      132(a1)
+0000034e 6704      beq.s      $354
+00000350 61000378  bsr        $6ca
+00000354 14c0      move.b     d0,(a2)+
+00000356 5382      subq.l     #1,d2
+00000358 6b0a      bmi.s      $364
+0000035a b029008b  cmp.b      139(a1),d0
+0000035e 66e4      bne.s      $344
+00000360 4a00      tst.b      d0
+00000362 67e0      beq.s      $344
+00000364 5282      addq.l     #1,d2
+00000366 2a69000a  movea.l    10(a1),a5
+0000036a 95ad0004  sub.l      d2,4(a5)
+0000036e 60000188  bra        $4f8
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+ReadLn:
+00000372 6100024e  bsr        label_5c2
+00000376 6594      bcs.s      label_30c
+00000378 74ff      moveq      #255,d2
+0000037a 262d0004  move.l     4(a5),d3
+0000037e 67e4      beq.s      $364
+00000380 0c830000
+         0100      cmpi.l     #$100,d3
+00000386 6306      bls.s      $38e
+00000388 263c0000
+         0100      move.l     #$100,d3
+0000038e 3342002e  move.w     d2,46(a1)
+00000392 7400      moveq      #0,d2
+00000394 2469000e  movea.l    14(a1),a2
+00000398 6100010c  bsr        label_4a6
+0000039c 6500009e  bcs        $43c
+000003a0 4a00      tst.b      d0
+000003a2 670e      beq.s      $3b2
+000003a4 7208      moveq      #8,d1
+000003a6 41e90089  lea        137(a1),a0
+000003aa b018      cmp.b      (a0)+,d0
+000003ac 57c9fffc  dbeq       d1,$3aa
+000003b0 673a      beq.s      $3ec
+000003b2 b469002e  cmp.w      46(a1),d2
+000003b6 6304      bls.s      $3bc
+000003b8 3342002e  move.w     d2,46(a1)
+000003bc 5242      addq.w     #1,d2
+000003be b443      cmp.w      d3,d2
+000003c0 650c      bcs.s      $3ce
+000003c2 10290093  move.b     147(a1),d0
+000003c6 61000302  bsr        $6ca
+000003ca 5342      subq.w     #1,d2
+000003cc 60ca      bra.s      $398
+000003ce 4a290081  tst.b      129(a1)
+000003d2 6710      beq.s      $3e4
+000003d4 0c000061  cmpi.b     #$61,d0
+000003d8 650a      bcs.s      $3e4
+000003da 0c00007a  cmpi.b     #$7a,d0
+000003de 6204      bhi.s      $3e4
+000003e0 04000020  subi.b     #$20,d0
+000003e4 14c0      move.b     d0,(a2)+
+000003e6 610000ee  bsr        $4d6
+000003ea 60ac      bra.s      $398
+000003ec e341      asl.w      #1,d1
+000003ee 323b1008  move.w     8(pc,d1.w),d1
+000003f2 4ebb1004  jsr        4(pc,d1.w)		whom are we calling ...
+000003f6 60a0      bra.s      $398
+movea.l	PD_DEV(a1),a0	get device table entry address
+movea.l	V$STAT(a0),a2	get device static storage
+movea.l	V$DRVR(a0),a0	get driver module address
+move.l	M$Exec(a0),d0	get offset to routine offset table
+move.w	D$READ(a0,d0.l),d0	get offset to read routine
+jsr	0(a0,d0.w)	call the routine
+
+000003f8 004e004e  ori.w      #$4e,a6
+000003fc ff14      Line 1111 
+000003fe 0094008a
+         0038      ori.l      #$8a0038,(a4)
+00000404 0012004e  ori.b      #$4e,(a2)
+00000408 0062588f  ori.w      #$588f,-(a2)
+0000040c 1480      move.b     d0,(a2)
+0000040e 610000c6  bsr        $4d6
+00000412 2602      move.l     d2,d3
+00000414 5283      addq.l     #1,d3
+00000416 2a69000a  movea.l    10(a1),a5
+0000041a 2b430004  move.l     d3,4(a5)
+0000041e 206d0020  movea.l    32(a5),a0
+00000422 2469000e  movea.l    14(a1),a2
+00000426 10da      move.b     (a2)+,(a0)+
+00000428 51cafffc  dbf        d2,$426
+0000042c 600000ca  bra        $4f8
+00000430 588f      addq.l     #4,a7
+00000432 4a42      tst.w      d2
+00000434 6700fefe  beq        $334
+00000438 6000ff78  bra        $3b2
+0000043c 14bc000d  move.b     #$d,(a2)
+00000440 6000fef6  bra        $338
+00000444 6114      bsr.s      $45a
+00000446 4a42      tst.w      d2
+00000448 6708      beq.s      $452
+0000044a 4a290083  tst.b      131(a1)
+0000044e 67f4      beq.s      $444
+00000450 612a      bsr.s      $47c
+00000452 7400      moveq      #0,d2
+00000454 2469000e  movea.l    14(a1),a2
+00000458 4e75      rts
+       
+0000045a 4a42      tst.w      d2
+0000045c 671c      beq.s      $47a
+0000045e 538a      subq.l     #1,a2
+00000460 5342      subq.w     #1,d2
+00000462 4a290082  tst.b      130(a1)
+00000466 6706      beq.s      $46e
+00000468 6104      bsr.s      $46e
+0000046a 7020      moveq      #32,d0
+0000046c 6104      bsr.s      $472
+0000046e 10290092  move.b     146(a1),d0
+00000472 4a290084  tst.b      132(a1)
+00000476 66000252  bne        $6ca
+0000047a 4e75      rts
+       
+0000047c 700d      moveq      #13,d0
+0000047e 6000024a  bra        $6ca
+00000482 14a9008b  move.b     139(a1),(a2)
+00000486 700d      moveq      #13,d0
+00000488 61c8      bsr.s      $452
+0000048a 6150      bsr.s      $4dc
+0000048c b469002e  cmp.w      46(a1),d2
+00000490 6712      beq.s      $4a4
+00000492 5242      addq.w     #1,d2
+00000494 b443      cmp.w      d3,d2
+00000496 640a      bcc.s      $4a2
+00000498 101a      move.b     (a2)+,d0
+0000049a b029008b  cmp.b      139(a1),d0
+0000049e 66ea      bne.s      $48a
+000004a0 538a      subq.l     #1,a2
+000004a2 5342      subq.w     #1,d2
+000004a4 4e75      rts       
+
+label_4a6
+	movem.l    d2-d3a0-a3,-(a7)
+000004aa 20690004  movea.l    4(a1),a0
+000004ae 2469002a  movea.l    42(a1),a2
+000004b2 26680004  movea.l    4(a0),a3
+000004b6 200a      move.l     a2,d0
+000004b8 6602      bne.s      $4bc
+000004ba 2448      movea.l    a0,a2
+000004bc 246a0004  movea.l    4(a2),a2
+000004c0 15690088
+         0033      move.b     136(a1),51(a2)
+000004c6 274a002e  move.l     a2,46(a3)
+000004ca 7202      moveq      #2,d1		read
+000004cc 61000292  bsr        dispatch_d1
+000004d0 4cdf0f0c  movem.?    (a7)+,d2-d3a0-a3
+000004d4 4e75      rts
+       
+000004d6 4a290084  tst.b      132(a1)
+000004da 671a      beq.s      $4f6
+000004dc 0c000020  cmpi.b     #$20,d0
+000004e0 640001e8  bcc        $6ca
+000004e4 0c00000d  cmpi.b     #$d,d0
+000004e8 670001e0  beq        $6ca
+000004ec 1f00      move.b     d0,-(a7)
+000004ee 702e      moveq      #46,d0
+000004f0 610001d8  bsr        $6ca
+000004f4 101f      move.b     (a7)+,d0
+000004f6 4e75      rts
+       
+000004f8 30290008  move.w     8(a1),d0
+000004fc 22290004  move.l     4(a1),d1
+00000500 6104      bsr.s      $506
+00000502 2229002a  move.l     42(a1),d1
+00000506 6710      beq.s      $518
+00000508 2041      movea.l    d1,a0
+0000050a 20680004  movea.l    4(a0),a0
+0000050e b0680006  cmp.w      6(a0),d0
+00000512 6604      bne.s      $518
+00000514 42680006  clr.w      6(a0)
+00000518 4e75      rts       
+
+label_51a
+	movea.l    4(a1),a0
+0000051e 20680004  movea.l    4(a0),a0
+00000522 4a280046  tst.b      70(a0)
+00000526 671a      beq.s      $542
+00000528 42280046  clr.b      70(a0)
+0000052c 41e8fff4  lea        -12(a0),a0
+00000530 22280016  move.l     22(a0),d1
+00000534 2041      movea.l    d1,a0
+00000536 117c0001
+         0032      move.b     #$1,50(a0)
+0000053c 22280016  move.l     22(a0),d1
+00000540 66f2      bne.s      $534
+00000542 4e75      rts
+       
+00000544 48e78080  movem.l    d0/a0,-(a7)
+00000548 20680004  movea.l    4(a0),a0
+0000054c 30280006  move.w     6(a0),d0
+00000550 6736      beq.s      label_588
+00000552 b06f0002  cmp.w      2(a7),d0
+00000556 6764      beq.s      $5bc
+00000558 3f00      move.w     d0,-(a7)
+0000055a 619c      bsr.s      $4f8
+0000055c 301f      move.w     (a7)+,d0
+0000055e 2f0b      move.l     a3,-(a7)
+00000560 266e03a4  movea.l    932(a6),a3
+00000564 487a000c  pea        12(pc)
+00000568 2f2b00ac  move.l     172(a3),-(a7)
+0000056c 266b04ac  movea.l    1196(a3),a3
+00000570 4e75      rts
+       
+00000572 265f      movea.l    (a7)+,a3
+00000574 52290031  addq.b     #1,49(a1)
+00000578 4cdf0101  movem.b    (a7)+,d0/a0
+0000057c 322c0026  move.w     38(a4),d1
+00000580 67c2      beq.s      $544
+00000582 003c0001  ori        #$1,ccr
+00000586 4e75      rts       
+
+label_588
+	move.w     2(a7),d0
+0000058c 31400006  move.w     d0,6(a0)
+00000590 31400004  move.w     d0,4(a0)
+00000594 1169008f
+         0037      move.b     143(a1),55(a0)
+0000059a 11690090
+         0035      move.b     144(a1),53(a0)
+000005a0 11690091
+         0036      move.b     145(a1),54(a0)
+000005a6 11690098
+         0039      move.b     152(a1),57(a0)
+000005ac 11690099
+         003a      move.b     153(a1),58(a0)
+000005b2 10290094  move.b     148(a1),d0
+000005b6 6704      beq.s      $5bc
+000005b8 11400032  move.b     d0,50(a0)
+000005bc 4cdf0101  movem.b    (a7)+,d0/a0
+000005c0 4e75      rts       
+
+label_5c2
+	move.w     8(a1),d0
+000005c6 6100ff52  bsr        label_51a
+000005ca 12290032  move.b     50(a1),d1
+000005ce 673c      beq.s      $60c
+000005d0 b23c0003  cmp.b      #$3,d1
+000005d4 650a      bcs.s      $5e0
+000005d6 137c0001
+         0032      move.b     #$1,50(a1)
+000005dc 7200      moveq      #0,d1
+000005de 600c      bra.s      $5ec
+000005e0 52290032  addq.b     #1,50(a1)
+000005e4 b23c0002  cmp.b      #$2,d1
+000005e8 6502      bcs.s      $5ec
+000005ea 7204      moveq      #4,d1
+000005ec 2f0b      move.l     a3,-(a7)
+000005ee 266e03a4  movea.l    932(a6),a3
+000005f2 487a000c  pea        12(pc)
+000005f6 2f2b0020  move.l     32(a3),-(a7)
+000005fa 266b0420  movea.l    1056(a3),a3
+000005fe 4e75      rts
+       
+00000600 265f      movea.l    (a7)+,a3
+00000602 323c00dc  move.w     #$dc,d1
+00000606 003c0001  ori        #$1,ccr
+0000060a 4e75      rts
+       
+0000060c 42290031  clr.b      49(a1)
+00000610 20690004  movea.l    4(a1),a0
+00000614 6100ff2e  bsr        $544
+00000618 6518      bcs.s      $632
+0000061a 2229002a  move.l     42(a1),d1
+0000061e 2041      movea.l    d1,a0
+00000620 6706      beq.s      $628
+00000622 6100ff20  bsr        $544
+00000626 650a      bcs.s      $632
+00000628 4a290031  tst.b      49(a1)
+0000062c 6694      bne.s      label_5c2
+0000062e 42290030  clr.b      48(a1)
+00000632 4e75      rts       
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+WritLn:
+00000634 618c      bsr.s      label_5c2
+00000636 640a      bcc.s      $642
+00000638 4e75      rts       
+****************************************************
+*  a1 = path desc
+*  a4 = proc desc
+*  a5 = user reg stack
+*  a6 = system globals
+****************************************************
+*
+Write:
+0000063a 6186      bsr.s      label_5c2
+0000063c 65fa      bcs.s      $638
+0000063e 52290030  addq.b     #1,48(a1)
+00000642 262d0004  move.l     4(a5),d3
+00000646 6772      beq.s      $6ba
+00000648 246d0020  movea.l    32(a5),a2
+0000064c 4a83      tst.l      d3
+0000064e 6762      beq.s      $6b2
+00000650 5383      subq.l     #1,d3
+00000652 101a      move.b     (a2)+,d0
+00000654 6746      beq.s      $69c
+00000656 4a290030  tst.b      48(a1)
+0000065a 6640      bne.s      $69c
+0000065c 4a290081  tst.b      129(a1)
+00000660 6710      beq.s      $672
+00000662 0c000061  cmpi.b     #$61,d0
+00000666 650a      bcs.s      $672
+00000668 0c00007a  cmpi.b     #$7a,d0
+0000066c 6204      bhi.s      $672
+0000066e 04000020  subi.b     #$20,d0
+00000672 b029009a  cmp.b      154(a1),d0
+00000676 6624      bne.s      $69c
+00000678 7000      moveq      #0,d0
+0000067a 7400      moveq      #0,d2
+0000067c 1029009b  move.b     155(a1),d0
+00000680 670e      beq.s      $690
+00000682 342900a0  move.w     160(a1),d2
+00000686 84c0      divu.w     d0,d2
+00000688 4842      swap       d2
+0000068a 9440      sub.w      d0,d2
+0000068c 4442      neg.w      d2
+0000068e 5342      subq.w     #1,d2
+00000690 7020      moveq      #32,d0
+00000692 614c      bsr.s      $6e0
+00000694 55cafffa  dbcs       d2,$690
+00000698 6524      bcs.s      $6be
+0000069a 60b0      bra.s      $64c
+0000069c 6142      bsr.s      $6e0
+0000069e 651e      bcs.s      $6be
+000006a0 102affff  move.b     -1(a2),d0
+000006a4 67a6      beq.s      $64c
+000006a6 b029008b  cmp.b      139(a1),d0
+000006aa 66a0      bne.s      $64c
+000006ac 4a290030  tst.b      48(a1)
+000006b0 669a      bne.s      $64c
+000006b2 2a69000a  movea.l    10(a1),a5
+000006b6 97ad0004  sub.l      d3,4(a5)
+000006ba 6000fe3c  bra        $4f8
+000006be 40e7      move       sr,-(a7)
+000006c0 3f01      move.w     d1,-(a7)
+000006c2 61ee      bsr.s      $6b2
+000006c4 4c9f0002  movem.w    (a7)+,d1
+000006c8 4e77      rtr       
+000006ca 48e7a0e0  movem.l    d0/d2/a0-a2,-(a7)
+000006ce 2069002a  movea.l    42(a1),a0
+000006d2 2208      move.l     a0,d1
+000006d4 67000082  beq        label_758
+000006d8 0c00000d  cmpi.b     #$d,d0
+000006dc 6674      bne.s      $752
+000006de 6040      bra.s      $720
+000006e0 48e7a0e0  movem.l    d0/d2/a0-a2,-(a7)
+000006e4 2069002a  movea.l    42(a1),a0
+000006e8 2208      move.l     a0,d1
+000006ea 676c      beq.s      label_758
+000006ec 0c00000d  cmpi.b     #$d,d0
+000006f0 6660      bne.s      $752
+000006f2 24680004  movea.l    4(a0),a2
+000006f6 4a2a0034  tst.b      52(a2)
+000006fa 660e      bne.s      $70a
+000006fc 4a290087  tst.b      135(a1)
+00000700 671e      beq.s      $720
+00000702 532a0033  subq.b     #1,51(a2)
+00000706 6618      bne.s      $720
+00000708 600c      bra.s      $716
+0000070a 6100fd9a  bsr        label_4a6
+0000070e 6506      bcs.s      $716
+00000710 b029008f  cmp.b      143(a1),d0
+00000714 66f4      bne.s      $70a
+00000716 6100fd8e  bsr        label_4a6
+0000071a b029008f  cmp.b      143(a1),d0
+0000071e 67f6      beq.s      $716
+00000720 24680004  movea.l    4(a0),a2
+00000724 422a0034  clr.b      52(a2)
+00000728 700d      moveq      #13,d0
+0000072a 6132      bsr.s      label_75e
+0000072c 652a      bcs.s      label_758
+0000072e 426900a0  clr.w      160(a1)
+00000732 4a290030  tst.b      48(a1)
+00000736 6620      bne.s      label_758
+00000738 7400      moveq      #0,d2
+0000073a 14290086  move.b     134(a1),d2
+0000073e 4a290085  tst.b      133(a1)
+00000742 6706      beq.s      $74a
+00000744 700a      moveq      #10,d0
+label_746
+00000746 6116      bsr.s      label_75e
+00000748 650e      bcs.s      label_758
+0000074a 7000      moveq      #0,d0
+0000074c 51cafff8  dbf        d2,label_746
+00000750 6006      bra.s      label_758
+
+00000752 526900a0  addq.w     #1,160(a1)
+00000756 6106      bsr.s      label_75e
+label_758
+	movem.l    (a7)+,d0/d2/a0-a2
+0000075c 4e75      rts       
+
+label_75e
+	moveq      #4,d1		write
+dispatch_d1
+	movem.l    d2-d3a0-a2a4-a6,-(a7)
+	movea.l    V$STAT(a0),a2	get device static storage
+	clr.w      8(a2)
+	movea.l    V$DRVR(a0),a0	get driver module address
+	add.l      M$Exec(a0),d1	add offset to routine offset table
+	move.w     0(a0,d1.w),d1	get offset to routine d1
+	jsr        0(a0,d1.w)		call the routine
+	movem.l    (a7)+,d2-d3a0-a2a4-a6
+	rts       
+
+*
+*	junk, to be deleted
+*
+
+
+        dc.w    INIT		0
+        dc.w    read		2
+        dc.w    write		4
+        dc.w    getstat		6
+        dc.w    setstat		8
+        dc.w    terminate	10
+        dc.w    0
+
+000004ca 7202      moveq      #2,d1			read
+000004cc 61000292  bsr        $760			dispatch
+
+000002d6 7208      moveq      #8,d1			setstat
+
+

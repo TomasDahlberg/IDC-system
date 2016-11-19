@@ -1,0 +1,18 @@
+pctcheck, version 1.0
+Copyright 1992, IVT Electronic AB
+Syntax: pctcheck [val] <duc-path> <pct-path>
+
+val „r ett av f”ljande:
+-q         tyst mod
+-v         pratig mod
+-0         behandla duc 0 som duc 1
+
+<duc-path> „r s”kv„gen till metamod-fil(er).
+           Ett valfritt %d kommer att ers„ttas
+           med aktuellt nodnummer.
+
+<pct-file> „r de files som ska behandlas. 
+           s”ktecknen * and ? kan anv„ndas.
+
+Exempel:   pctcheck \huvud\duc%d \ivtnew\*.pct
+

@@ -1,0 +1,111 @@
+1
+  1:PentrepFrom        = 0
+  2:PentrepKod         = 10000
+  3:PextraFrom         = 0
+  4:PextraKod          = 10000
+  5:PhyresFrom         = 0
+  6:PhyresKod          = 10000
+  7:PpostFrom          = 0
+  8:PpostKod           = 10000
+  9:PserviceFrom       = 0
+ 10:PserviceKod        = 10000
+ 11:access             = 0
+ 14:code               = -31073
+ 15:codeNo             = -31073
+ 19:entrepCal         
+Mo,Tu,We,Th,Fr,      ! Black  ! 10.05 - 16.30 !
+0327 - 0329          !        ! 10.01 - 18.05 !
+   Tu,               ! Red    ! Hela dygnet   !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+ 20:entrepFrom         = 0
+ 21:entrepKod          = 0
+ 22:extraCal          
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+ 23:extraFrom          = 0
+ 24:extraKod           = 0
+ 29:hyresCal          
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+ 30:hyresFrom          = 0
+ 31:hyresKod           = 0
+ 32:level              = 1
+ 33:level5             = 1791
+ 34:node               = 1
+ 35:nyEntrepKod        = 0
+ 36:nyExtraKod         = 0
+ 37:nyHyresKod         = 0
+ 38:nyPostKod          = 0
+ 39:nyServiceKod       = 0
+ 40:p1                 = 0
+ 41:p2                 = 0
+ 42:p3                 = 0
+ 43:p4                 = 0
+ 45:portNr             = 3
+ 46:portkod_password   = 4711
+ 47:postCal           
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+ 48:postFrom           = 0
+ 49:postKod            = 0
+ 50:serviceCal        
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+ 51:serviceFrom        = 0
+ 52:serviceKod         = 0
+ 55:sinc_module        = 7
+ 60:totFail            = 4
+ 61:totPass            = 7
+
+1. variable:  list all vars
+2.            change variable
+3.            lock/unlock all I/O bound variables
+4. alarm:     list all disables
+5.            enable/disable alarm
+6.            enable/disable all alarms
+7. timer:     list all timers
+8.            change delay of timer
+9.            clear all timers
+0. quit
+
+Select an item : 0
+
+$ 

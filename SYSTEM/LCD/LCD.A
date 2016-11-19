@@ -1,0 +1,134 @@
+lcd_ctrl set     $0308000
+lcd_data set     $0308001
+keyboard set     $0308002
+
+type     set      (14<<8)+1 
+revs     set      (160<<8)+0
+         psect    v,type,revs,1,256,jmptable
+
+* 0038DC3E   - 0000003C           offset to execution entry point
+* 0038DC42   - 00000000           offset to exception entry 
+* 0038DC46   - 00000054           data storage requirement
+* 0038DC4A   - 004A		offset to init routine         38dc55
+* 0038DC4C   - 00B8                         read routine         38dcc6
+* 0038DC4E   - 009E                         write routine        38dcac
+* 0038DC50   - 00EA                         getstat routine      38dcf8
+* 0038DC52   - 0116                         setstat routine      38dd24
+* 0038DC54   - 00B4                         terminate routine    38dcc2
+* 0038DC56   - 0000                         exception error routine
+
+*         org     0
+
+*         dc.l    1
+*         dc.l    2
+
+jmptable:
+        dc.w    INIT
+        dc.w    read
+        dc.w    write
+        dc.w    getstat
+        dc.w    setstat
+        dc.w    terminate
+        dc.w    0
+
+INIT:
+noty_1  btst	#7,lcd_ctrl
+	bne	noty_1
+	move.b	#1,lcd_ctrl         clear display
+not_yet	btst	#7,lcd_ctrl         and wait...
+	bne     not_yet
+	move.b	#13,lcd_ctrl        display on, cursor off, blink on
+noty_2	btst    #7,lcd_ctrl         and wait...
+	bne     noty_2
+	move.b	#$38,lcd_ctrl       8bit, 2lines, 5*7dots
+noty_3	btst	#7,lcd_ctrl         and wait
+	bne	noty_3
+	move.b  #6,lcd_ctrl         increment pos, no shift
+	moveq.l	#0,d1               ok, no error
+	rts
+
+*
+*	write routine
+*   	      		       // write char //
+write:
+noty_4	btst	#7,lcd_ctrl        wait for ready
+	bne	noty_4
+	move.b	d0,lcd_data        write a character
+	moveq.l	#0,d1              ok, no error
+	rts
+*
+*	terminate routine
+*
+terminate:
+	moveq.l	#0,d1
+	rts
+
+*
+*	read routine
+*				   // get char //
+read:
+wait	btst	#7,keyboard         wait for key has been down
+	beq.s	wait
+	move.b	keyboard,d0         read data
+	andi.b	#$1f,d0
+	addi.b	#$30,d0
+	cmpi.b	#$3b,d0             cmp enter- character
+	bne.s	not_cr
+	move.b	#$0d,d0             replace by carriage return
+not_cr	moveq.l	#0,d1               ok, no error
+	rts
+
+set_flag:
+	ori.b	#1,ccr
+	rts
+
+device_notready:
+	move.w	#$00f6,d1               error #246 = Device Not Ready
+	bra.s	set_flag
+
+*
+*	getstat routine
+*	accepts codes;	1, 6, and 0
+*
+getstat:
+	cmpi.w	#$0001,d0  		_gs_rdy ?
+	bne.s   next
+	btst	#7,keyboard             yes, check any character
+	beq.s   device_notready         no, return error 246
+	move.l	#1,4(a5)                yes, no of characters was just 1 !
+	bra	ok                      ok, return no errors
+next:	cmpi.w	#6,d0                   code 6 ??
+	beq.s	ok                      yes, return no error
+	cmpi.w	#0,d0
+	bne.s	Unknown_code            not one of; 0, 1 or 6
+ok:	moveq.l	#0,d1
+	rts
+*
+*	setstat routine
+*	accepts codes;  0 and 42
+*
+setstat:
+	cmpi.w	#0,d0
+	beq.s	ok
+	cmpi.w	#$2a,d0              	SS_Open
+	bne.s	Unknown_code
+wait_4	btst	#7,lcd_ctrl
+	bne	wait_4
+	move.b	#1,lcd_ctrl
+wait_5	btst	#7,lcd_ctrl
+	bne	wait_5
+	move.b	#$0d,lcd_ctrl
+wait_6	btst	#7,lcd_ctrl
+	bne	wait_6
+	move.b	#$38,lcd_ctrl
+wait_7	btst	#7,lcd_ctrl
+	bne	wait_7
+	move.b	#6,lcd_ctrl
+	bra.s	ok
+
+Unknown_code:
+	move.w	d0,$400
+	move.w	#$00d0,d1         error 224 = Unknown service code
+	bra	set_flag
+
+

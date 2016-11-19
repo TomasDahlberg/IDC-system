@@ -1,0 +1,98 @@
+
+TypeLang  set     $F00
+Attr_Rev  set     $8000
+Edition   set     5
+
+          psect   term,TypeLang,Attr_Rev,Edition,0,0
+
+Port      set     $00340010		0 = port 0, 8 = port 1, 10 = port 2
+Vector    set     $1e			18 = port 3
+IRQLevel  set     $06
+Priority  set     $fa			05
+Mode      set     $23
+
+main:
+          dc.l    Port
+          dc.b    Vector
+          dc.b    IRQLevel
+          dc.b    Priority
+          dc.b    Mode
+
+          dc.w    FileMgr
+          dc.w    DevDrv
+          dc.w    DevCon
+          dc.w    0,0,0,0
+          dc.w    OptLen
+
+PD_DTP    set     0
+PD_UPC    set     0
+PD_BSO    set     0
+PD_DLO    set     0
+PD_EKO    set     0		1
+PD_ALF    set     0
+PD_NUL    set     0
+PD_PAU    set     0
+
+PD_PAG    set     0            Page length
+PD_BSP    set     0            Backspace "input" character
+PD_DEL    set     0            Delete line character
+PD_EOR    set     0            End of record character
+
+PD_EOF    set     0
+PD_RPR    set     0
+PD_DUP    set     0
+PD_PSC    set     0
+PD_INT    set     0
+PD_QUT    set     0
+PD_BSE    set     0
+PD_OVF    set     0
+PD_PAR    set     2
+PD_BAU    set     $0e
+
+PD_XON    set     0
+PD_XOFF   set     0
+PD_Tab    set     0
+PD_Tabs   set     0
+
+
+optField
+          dc.b    PD_DTP
+          dc.b    PD_UPC
+          dc.b    PD_BSO
+          dc.b    PD_DLO
+          dc.b    PD_EKO
+          dc.b    PD_ALF
+          dc.b    PD_NUL
+          dc.b    PD_PAU
+
+          dc.b    PD_PAG
+          dc.b    PD_BSP
+          dc.b    PD_DEL
+          dc.b    PD_EOR
+          dc.b    PD_EOF
+          dc.b    PD_RPR
+          dc.b    PD_DUP
+          dc.b    PD_PSC
+          dc.b    PD_INT
+          dc.b    PD_QUT
+          dc.b    PD_BSE
+          dc.b    PD_OVF
+          dc.b    PD_PAR
+          dc.b    PD_BAU
+          dc.w    PD_D2P
+          dc.b    PD_XON
+          dc.b    PD_XOFF
+          dc.b    PD_Tab
+          dc.b    PD_Tabs
+
+OptLen    equ     *-optField
+
+          
+FileMgr   dc.b    "Scf",0
+DevCon    dc.w    5
+DevDrv    dc.b    "nt82c684",0,0
+
+PD_D2P    
+* dc.b    "n196",0
+
+          ends

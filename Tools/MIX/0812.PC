@@ -1,0 +1,640 @@
+2 13 KA03_2_Drift & 2 14 KA01_LARM & 2 15 KA02_LARM & 2 16 KA03_LARM & 2 17 KM1X_SV32 & 2 18 KM1X_PA56_drfel
+2 19 KM1X_PA56_Ksvar & 2 20 VA1X_PA61_drfel & 2 21 VA1X_PA61_Ksvar & 2 22 KM1X_SV21 & 2 23 KM1X_PA54_drfel & 2 24 KM1X_PA55_drfel
+2 25 KM1X_PA55_Ksvar & 2 26 KM1X_PA54_Ksvar & 2 27 KM1X_GT11 & 2 28 KM1X_GT12 & 2 29 VA1X_GT22 & 2 30 VA1X_GT23
+2 19 KM1X_PA56_Ksvar & 2 20 VA1X_PA61_drfel & 2 21 VA1X_PA61_Ksvar & 2 22 KM1X_SV21 & 2 23 KM1X_PA54_drfel & 2 24 KM1X_PA55_drfel
+!!!
+***
+2 25 KM1X_PA55_Ksvar & 2 26 KM1X_PA54_Ksvar & 2 27 KM1X_GT11 & 2 28 KM1X_GT12 & 2 29 VA1X_GT22 & 2 30 VA1X_GT23
+2 31 KM1XGP11_AImv & 2 32 Ute_GT31 & 2 33 KM1X_GT11_bv & 2 34 KM1X_GP11_bv & 2 35 KM1X_U2_FO & 2 36 KA_tidkanal
+2 31 KM1XGP11_AImv & 2 32 Ute_GT31 & 2 33 KM1X_GT11_bv & 2 34 KM1X_GP11_bv & 2 35 KM1X_U2_FO & 2 36 KA_tidkanal
+2 37 KM1X_U2_LARM & 2 38 KM1X_EXP & 2 39 KA01_reg & 2 40 KA02_reg & 2 41 KA03_reg
+!!!
+***
+&&&
+2 7 KM1X_SV31 & 2 8 KA01_1_Drift & 2 9 KA01_2_Drift & 2 10 KA02_1_Drift & 2 11 KA02_2_Drift & 2 12 KA03_1_Drift
+2 13 KA03_2_Drift & 2 14 KA01_LARM & 2 15 KA02_LARM & 2 16 KA03_LARM & 2 17 KM1X_SV32 & 2 18 KM1X_PA56_drfel
+2 19 KM1X_PA56_Ksvar & 2 20 VA1X_PA61_drfel & 2 21 VA1X_PA61_Ksvar & 2 22 KM1X_SV21 & 2 23 KM1X_PA54_drfel & 2 24 KM1X_PA55_drfel
+!!!
+2 25 KM1X_PA55_Ksvar & 2 26 KM1X_PA54_Ksvar & 2 27 KM1X_GT11 & 2 28 KM1X_GT12 & 2 29 VA1X_GT22 & 2 30 VA1X_GT23
+2 25 KM1X_PA55_Ksvar & 2 26 KM1X_PA54_Ksvar & 2 27 KM1X_GT11 & 2 28 KM1X_GT12 & 2 29 VA1X_GT22 & 2 30 VA1X_GT23
+2 31 KM1XGP11_AImv & 2 32 Ute_GT31 & 2 33 KM1X_GT11_bv & 2 34 KM1X_GP11_bv & 2 35 KM1X_U2_FO & 2 36 KA_tidkanal
+2 37 KM1X_U2_LARM & 2 38 KM1X_EXP & 2 39 KA01_reg & 2 40 KA02_reg & 2 41 KA03_reg
+!!!
+***
+ACK
+***
+2 1 KM1X_PA51_drfel & 2 2 KM1X_PA52_drfel & 2 3 KM1X_PA53_drfel & 2 4 KM1X_PA51_Ksvar & 2 5 KM1X_PA52_Ksvar & 2 6 KM1X_PA53_Ksvar
+2 7 KM1X_SV31 & 2 8 KA01_1_Drift & 2 9 KA01_2_Drift & 2 10 KA02_1_Drift & 2 11 KA02_2_Drift & 2 12 KA03_1_Drift
+2 13 KA03_2_Drift & 2 14 KA01_LARM & 2 15 KA02_LARM & 2 16 KA03_LARM & 2 17 KM1X_SV32 & 2 18 KM1X_PA56_drfel
+2 19 KM1X_PA56_Ksvar & 2 20 VA1X_PA61_drfel & 2 21 VA1X_PA61_Ksvar & 2 22 KM1X_SV21 & 2 23 KM1X_PA54_drfel & 2 24 KM1X_PA55_drfel
+!!!
+2 7 KM1X_SV31 & 2 8 KA01_1_Drift & 2 9 KA01_2_Drift & 2 10 KA02_1_Drift & 2 11 KA02_2_Drift & 2 12 KA03_1_Drift
+2 25 KM1X_PA55_Ksvar & 2 26 KM1X_PA54_Ksvar & 2 27 KM1X_GT11 & 2 28 KM1X_GT12 & 2 29 VA1X_GT22 & 2 30 VA1X_GT23
+2 31 KM1XGP11_AImv & 2 32 Ute_GT31 & 2 33 KM1X_GT11_bv & 2 34 KM1X_GP11_bv & 2 35 KM1X_U2_FO & 2 36 KA_tidkanal
+2 37 KM1X_U2_LARM & 2 38 KM1X_EXP & 2 39 KA01_reg & 2 40 KA02_reg & 2 41 KA03_reg
+CLOSE_PCT
+&&&
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 1 P0_2_tidkanal & 13 2 P0_1_tidkanal & 13 3 P0_3_tidkanal & 13 4 P0_4_tidkanal & 13 5 Ljus_P0_2 & 13 6 P0_5_tidkanal
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+13 1 P0_2_tidkanal & 13 2 P0_1_tidkanal & 13 3 P0_3_tidkanal & 13 4 P0_4_tidkanal & 13 5 Ljus_P0_2 & 13 6 P0_5_tidkanal
+&&&
+&&&
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+***
+ACK
+***
+ACK
+***
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+***
+ACK
+***
+&&&
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+***
+ACK
+***
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+13 getcal P0_6_kalender
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+13 getcal P0_6_kalender
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+***
+ACK
+***
+!!!
+!!!
+!!!
+&&&
+!!!
+!!!
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+&&&
+!!!
+***
+ACK
+***
+!!!
+!!!
+!!!
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+!!!
+***
+ACK
+***
+ACK
+***
+***
+&&&
+&&&
+!!!
+***
+ACK
+***
+&&&
+&&&
+CLOSE_PCT
+&&&
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+!!!
+13 1 P0_2_tidkanal & 13 2 P0_1_tidkanal & 13 3 P0_3_tidkanal & 13 4 P0_4_tidkanal & 13 5 Ljus_P0_2 & 13 6 P0_5_tidkanal
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+13 1 P0_2_tidkanal & 13 2 P0_1_tidkanal & 13 3 P0_3_tidkanal & 13 4 P0_4_tidkanal & 13 5 Ljus_P0_2 & 13 6 P0_5_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+!!!
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+!!!
+&&&
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+***
+ACK
+***
+ACK
+***
+&&&
+&&&
+&&&
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+&&&
+&&&
+!!!
+&&&
+&&&
+&&&
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&
+13 7 P0_7_tidkanal & 13 8 UteGX1_AImv & 13 9 Ute_GT31 & 13 10 P0_6_tidkanal & 13 11 P0_8_tidkanal & 13 12 P1_1_tidkanal
+!!!
+13 13 P1_2_tidkanal & 13 14 P1_4_tidkanal & 13 15 P1_3_tidkanal & 13 16 P1_5_tidkanal & 13 17 P1_6_tidkanal & 13 18 Ljus_P1_2
+13 19 P1_7_tidkanal & 13 20 Ljus_P0_3 & 13 21 Ljus_P0_6
+&&&

@@ -1,0 +1,55 @@
+Aq1_1 = 0
+Aq1_2 = 0
+Aq1_3 = 0
+Aq1_4 = 0
+Aq2_1 = 0
+Aq2_2 = 0
+Aq2_3 = 0
+Aq2_4 = 0
+Aterstall = 1
+Auto = 1
+calendar B_larm_kalender = {
+Mo,Tu,We,Th,Fr,Sa,Su, !        ! 08.00 - 18.00 !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+}
+B_larm_tidkanal = 1
+Brandcentral_fel = 1
+Brandlarm = 1
+calendar C_larm_kalender = {
+Mo,Tu,We,Th,Fr,  ,  , !        ! 07.00 - 16.00 !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+                     !        !               !
+}
+C_larm_tidkanal = 1
+telephonePC[0] = 0
+telephonePC[1] = 0
+telephonePC[2] = 0
+telephonePC[3] = 0
+telephonePC[4] = 0
+telephonePC[5] = 0
+telephonePC[6] = 0
+telephonePC[7] = 0
+telephonePC_area[0] = 0
+telephonePC_area[1] = 0
+telephonePC_area[2] = 0
+telephonePC_area[3] = 0
+telephonePC_area[4] = 0
+telephonePC_area[5] = 0
+telephonePC_area[6] = 0
+telephonePC_area[7] = 0
+winterStart = 0

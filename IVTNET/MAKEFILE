@@ -1,0 +1,97 @@
+cmds/server:  RELS/server.r RELS/netlib2.r RELS/read.r RELS/cal.r RELS\layer2.r RELS/get_var.r RELS/reg.r RELS/doStat.r RELS/lexicon.r RELS/logdisp.r
+	copy RELS\server.r/b+RELS\netlib2.r+RELS\read.r+RELS\cal.r+RELS\layer2.r RELS\serv_R1.r
+	copy RELS\get_var.r/b+RELS\reg.r+RELS\doStat.r+RELS\lexicon.r+RELS\logdisp.r RELS\serv_R2.r
+	copy RELS\serv_R1.r/b+RELS\serv_R2.r RELS\s_R.r
+	del RELS\serv_R1.r
+	del RELS\serv_R2.r
+	copy ..\..\idcutil\idcutil.l/b+..\..\idcio\idcio.l+..\..\phyio\phyio.l s_L.l
+        cd cmds
+	xcc -ixFD=server -m=10 ../RELS/s_R.r -l=..\s_L.l
+	cd ..
+
+xxcmds/server: RELS/server.r RELS/netlib2.r RELS/read.r RELS/cal.r RELS/get_var.r RELS/reg.r RELS/doStat.r RELS/lexicon.r RELS/logdisp.r
+        xcc -ixFD=CMDS/server -m=10 RELS/server.r RELS/netlib2.r RELS/layer2.r RELS/read.r RELS/cal.r RELS/get_var.r RELS/reg.r RELS/doStat.r RELS/lexicon.r RELS/logdisp.r -l=/dd/usr/tds/comp/idcio/idcio.l -l=/dd/usr/tds/comp/phyio/phyio.l
+      
+RELS/server.r: server.c
+          xcc -DDOS -ixm=10 -R=RELS server.c -v=..\..\defs
+
+RELS/doStat.r: doStat.c
+          xcc -DDOS -ixR=RELS doStat.c -v=..\..\defs
+
+cmds/netload: RELS/netload.r
+         xcc -ixFD=CMDS/netload RELS/netload.r -l=../../idcio/idcio.l
+
+RELS/netload.r: netload.c
+         xcc -ixR=RELS netload.c
+
+cmds/netdump: RELS/netdump.r
+         xcc -ixFD=CMDS/netdump RELS/netdump.r -l=../../idcio/idcio.l
+
+RELS/netdump.r: netdump.c
+         xcc -ixR=RELS netdump.c
+
+RELS/read.r:   read.c
+          xcc -ixR=RELS read.c
+
+cmds/forkshell: RELS/forkshell.r
+        l68 -O=CMDS/forkshell forkshell.r -l=/dd/lib/sys.l
+
+RELS/forkshell.r: forkshell.a
+          r68 -O=RELS/forkshell.r forkshell.a
+
+RELS/netlib1.r: netlib1.c
+          xcc -ixR=RELS netlib1.c
+
+RELS/netlib2.r: netlib2.c
+          xcc -ixR=RELS netlib2.c
+
+cmds/shownet: RELS/shownet.r
+      xcc -ixFD=CMDS/shownet RELS/shownet.r -l=../../idcio/idcio.l
+
+RELS/shownet.r: shownet.c
+        xcc -ixR=RELS shownet.c
+
+cmds/what : RELS/what.r
+      xcc -ixFD=CMDS/what RELS/what.r -l=../../idcio/idcio.l
+
+RELS/what.r: what.c
+        xcc -ixR=RELS what.c
+
+cmds/remote: RELS/remote.r
+      xcc -ixFD=CMDS/remote RELS/remote.r -l=../../idcio/idcio.l
+
+RELS/remote.r: remote.c
+        xcc -ixR=RELS remote.c
+
+cmds/slave:  RELS/slave.r RELS/netlib2.r RELS/layer2.r RELS/cal.r RELS/get_var.r RELS/reg.r RELS/lexicon.r RELS/logdisp.r
+	copy RELS\slave.r/b+RELS\netlib2.r+RELS\layer2.r+RELS\cal.r RELS\slave_R1.r
+	copy RELS\get_var.r/b+RELS\reg.r+RELS\lexicon.r+RELS\logdisp.r RELS\slave_R2.r
+	copy RELS\slave_R1.r/b+RELS\slave_R2.r RELS\slave_R.r
+	del RELS\slave_R1.r
+	del RELS\slave_R2.r
+	copy ..\..\idcutil\idcutil.l/b+..\..\idcio\idcio.l+..\..\phyio\phyio.l slave_L.l
+	cd cmds
+        xcc -ixFD=slave ..\RELS/slave_R.r -l=..\slave_L.l
+	cd ..
+
+RELS/slave.r:  slave.c
+          xcc -DDOS -ixR=RELS slave.c -v=..\..\defs
+
+RELS/logdisp.r: logdisp.c
+           xcc -ixR=RELS logdisp.c -v=..\..\defs -DDOS
+
+RELS/lexicon.r: lexicon.c
+           xcc -ixR=RELS lexicon.c
+
+RELS/reg.r:    reg.c
+          xcc -ixR=RELS reg.c
+
+RELS/get_var.r: get_var.c
+           xcc -ixR=RELS get_var.c
+
+RELS/cal.r:    cal.c
+          xcc -ixR=RELS cal.c
+
+RELS/layer2.r: layer2.c
+          xcc -ixR=RELS layer2.c
+

@@ -1,0 +1,110 @@
+type     set      (14<<8)+1 
+revs     set      (160<<8)+1
+         psect    v,type,revs,1,256,jmptable
+
+ vsect
+Shadow ds.l 1 pointer to shadow register
+Handler ds.l 1 current input interrupt handler
+InRead ds.l 1 input-buffer read pointer
+ ends
+
+jmptable:
+        dc.w    INIT				4a	38d364
+        dc.w    read				84	38d39e
+        dc.w    write				5e	38d378
+        dc.w    getstat				a4	38d3be
+        dc.w    setstat				cc	38d3e6
+        dc.w    terminate			6c	38d386
+        dc.w    0
+
+INIT:
+    move.l $00000410,$0054(a2)
+    move.l $00000414,$0058(a2)
+    moveq.l #0,d1
+    rts
+
+write:
+    move.l $0054(a2),a0
+    move.b d0,(a0)+
+    move.l a0,$0054(a2)
+    moveq.l #0,d1
+    rts
+
+terminate:
+    move.w $0000(a4),d0
+    move.w d0,$0006(a2)
+    move.w d0,$0004(a2)
+    moveq.l #0,d1
+    rts
+
+err_D3
+    moveq.l #-45,d1
+    ori.b #$01,ccr
+    rts
+
+read:
+    move.l $0058(a2),a0
+    cmpa.l $0054(a2),a0
+    beq.s  err_D3
+    move.b (a0)+,d0
+    move.l a0,$0058(a2)
+    moveq.l #0,d1
+    rts
+fel
+    ori.b #$01,ccr
+    rts
+err_f6
+    move.w #$00F6,d1
+    bra.s  fel
+
+getstat:
+    cmpi.w #$0001,d0
+    bne.s not_1
+    move.l $0054(a2),d0
+    sub.l $0058(a2),d0
+    move.l d0,$0006(a5)
+    beq.s err_f6
+    bra.s slut
+
+not_1
+    cmpi.w #$0006,d0
+    beq.s slut
+    cmpi.w #$0000,d0
+    bne   go_forit
+slut
+    moveq.l #0,d1
+    rts
+
+setstat:
+    cmpi.w #$0000,d0
+    bne.s not_s0
+end_s
+    moveq.l #0,d1
+    rts
+not_s0
+    cmpi.w #$001A,d0
+    beq.s  err_f6
+    cmpi.w #$001B,d0
+    beq.s  slut
+    cmpi.w #$002B,d0
+    beq.s  end_it
+    cmpi.w #$002A,d0
+    bne.s  go_forit
+    move.l $00000410,$0054(a2)
+    move.l $0054(a2),$005C(a2)
+    bra.s  end_s
+go_forit
+    move.w d0,$00000400
+    move.w #$00D0,d1
+    ori.b #$01,ccr
+    rts
+
+end_it
+    move.l $0054(a2),$00000410
+    move.l $005C(a2),a0
+    move.l #$00020000,d0
+    move.l $0004(a0),d1
+    os9 F$VModul
+    moveq.l #0,d1
+    rts
+

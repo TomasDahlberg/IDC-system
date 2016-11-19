@@ -1,0 +1,5 @@
+hw82c684: hw82c684.r
+    l68 /dd/lib/scfstat.l hw82c684.r -O=hw82c684 -l=/dd/lib/sys.l
+
+hw82c684.r: hw82c684.a
+    r68 -a=HWSHAKE -o=hw82c684.r hw82c684.a

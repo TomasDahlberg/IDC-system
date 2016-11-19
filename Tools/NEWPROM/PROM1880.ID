@@ -1,0 +1,92 @@
+
+$ prom
+Address  Size     Rev Ed# CRC     Module name
+=============================================
+00384408      118   1   2 6d030d  nil
+0038447e      170   1   1 80c444  null
+00384528      102   0   2 cf450e  pipe
+0038458e     2270   0  32 961bde  pipeman
+00384e6c     1930   0  29 56fcb0  scf
+003855f6    25680   0  66 82100b  kernel
+0038ba46      124   0   5 d990d0  nt
+0038bac2     2732   5  27 989b2e  nt82c684
+0038c56e      124   0   5 991236  nb
+0038c5ea     1624   1  14 65bb62  sc82c684
+0038cc42      126   2   5 4bb060  term
+0038ccc0      124   2   5 1fe3a3  t1
+0038cd3c      124   3   5 f54f3e  t0
+0038cdb8      124   2   5 fdcdb5  t2
+0038ce34      124   2   5 e62ae2  p1
+0038cfa8      126   1   5 e0c224  m212
+0038d026      126   1   5 6f0392  m224
+0038d0a4      126   1   5 7b1df1  m248
+0038d122      126   1   5 ecf37e  n212
+0038d1a0      126   1   5 6332c8  n224
+0038d21e      126   1   5 772cab  n248
+0038d29c      126   1   5 0bba83  n296
+0038d31a      312   1   1 12b3ce  modload
+0038d452      122   0   5 477ad2  mem
+0038d4cc      700   0   1 f37a33  setmem
+0038d788      318   0   7 2cb7db  ck82c684
+0038d8c6      448   0   1 f7da56  rtc
+0038da86      194   5  21 8b6bff  init
+0038db48      198   5   5 d403c7  sysgon
+0038dc0e      394   0   1 92782b  lcd
+0038dd98      120   0   5 6833b2  lcdterm
+0038de10     2456   1   1 f9e68a  break
+0038e7a8     7798   1  13 46c5dc  math
+0039061e    18052   9   6 e9adf1  cio
+00394ca2     5138   1  18 544a51  mdir
+003960b4     2528   1  14 5521d2  mfree
+00396a94     5376   1  19 f0030e  procs
+00397f94    18960   1  48 555797  shell
+0039c9a4     6280   1  19 5b8f65  ident
+0039eb74     6716   1   7 1b50b1  com
+003a0600     5246   8   1 d4159e  recmod
+003a1a7e      134   0   1 d1d598  ipl
+003a1b04    11314   5   8 a84832  ls
+003a4736     8584   4   7 090386  look
+003a68be     5644   2   3 9b9613  lookalarm
+003a7eca     2716   1   2 1dc58b  clearalarm
+003a8966    32454  25  23 b6b549  visionCom
+003b082c      204   3   2 30fd8a  verify
+003b08f8    50052  24  16 6c3659  idcio
+003bcc7c    12616  11   9 9137f2  phyio
+003bfdc4     2836   1   2 f40f1a  reboot
+003c08d8      172   1   1 e7882b  clear
+003c0984      134   1   2 53d84e  pulse
+003c0a0a      124   1   1 50620b  version
+003c0a86      124   1   2 be3200  clearmem
+003c0b02     9154   1   2 61fdba  prCom
+003c2ec4     2632   1   2 67a3f1  showipl
+003c390c      256   1   2 19f8e3  shownode
+003c3a0c     6070   1   1 9eb6e3  checkIpl
+003c51c2     3480   1   2 517b82  new
+003c5f5a     7798  11   7 321f67 +recmod
+003c7dd0      120   1   1 fde478  localReboot
+003c7e48     2760   6  29 f56f7d +nt82c684
+003c8910      274   7   5 4e0db7 +sysgon
+003c8a22    34332  12   8 dfa049  slave
+003d103e    35078  21   7 11cf69  server
+003d9944     8126   1  19 4a0001  tmode
+003db902      126   1   1 db2ddb  n112
+003db980      126   1   1 54ec6d  n124
+003db9fe      126   1   1 3c6426  n196
+003dba7c     3494   9   3 7541f9  shownet
+003dc822     2878   1   7 533c22  what
+003dd360     3928   1  21 bd521a  setime
+003de2b8     2802   1  16 9c812f  date
+003dedaa     2576   1   3 5f254a  events
+003df7ba     6176   1   3 b85c52  setStat
+003e0fda     7568   3   1 204093  modtest
+003e2d6a     3074   1   1 bf4829  netdump
+003e396c     2640   1   1 b0b58e  netload
+003e43bc    10822   2   2 b5d318  chall
+003e6e02     2884   1   1 ed8b79  chduc
+003e7946     5790   1   1 875987  chio
+003e8fe4     3308   1   1 8506e0  chsiinet
+003f00b6    12052  11   6 859047 =phyio
+
+$ version
+Version 1.880  Copyright IVT Electronic AB, 1993
+$ 

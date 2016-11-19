@@ -1,0 +1,284 @@
+* traphand.a  1993-08-30 TD,  version 1.36
+*
+* This file contains proprietary information of IVT Electronic AB.
+* Copying or reproduction without prior written approval is prohibited.
+*
+* This file is furnished under a license agreement or nondisclosure
+* agreement. The software may be used or copied only in accordance 
+* with the terms of the agreement.
+*
+* In no event will IVT Electronic AB, be liable for any lost revenue or
+* profits or other special, indirect and consequential damages, even if
+* IVT has been advised of the possibility of such damages.
+*
+* IVT Electronic AB
+* Box 996
+* 191 29 Sollentuna
+* Sweden
+*
+
+*
+* traphand.a
+* Copyright (C) 1991-1993 IVT Electronic AB.
+*
+
+
+          nam      Trap Handler
+          ttl      collection of idc-utilities in trap handling module
+*
+*
+*   traphand.a    - trap handler interface for idcio trap module
+*
+*   history:
+*   date       by  rev  ed#  what
+*   ---------- --- ---  ---  ------------------------------------
+*   1991-??-?? td  1.00   1  initial coding
+*
+*     91-05-22 td  1.01   3  call fram for filter functions changed
+*
+*     91-05-23 td  1.02   4  enter receives string, and two float refs
+*                            must be prototyped as; 
+*                                     float enter(int, float&, float&);
+*     91-05-27 td  1.03   5  read-alarm shows current status continously
+*
+*     91-06-06 td  1.04   6  kurva and twinpump added
+*
+*     91-06-17 td  1.05   7  metaSize added, enter may have 5 vars
+*
+*     91-07-15 td  1.06   8  account added
+*
+*     91-07-20 td  1.07   9  alarm_active, PULS_1, getTime and enter_kurva added
+*
+*     91-08-01 td  1.08  10  account's pointer can be zero which means no update
+*
+*     91-08-05 td  1.09  11  calendar structure changed, no raise/fall,
+*                            but active/inactive instead.
+*     91-08-16 td  1.10  12  enter doesnt dereference pointers for addresses
+*                            above 0x3ffff, tvpump correct (?)
+*     92-02-18 td  1.20
+*
+*     92-06-11 td  1.30  14  Added incdec
+*
+*     92-09-18 td  1.31  15  Added Staefa_PTC_150 filter function
+*                            Bugfix in globalAlarmMask system
+*
+*     92-10-06 td  1.32  15  Added netRebootNode, netPutMem & netGetMem
+*
+*     93-02-17 td  1.33  16  Added startDownCounter as entry 104
+*                            Added alarmStatus (930222)
+*
+*     93-05-11 td  1.34  16  Added Freq() as entry 105
+*
+*     93-07-22 td  1.35  17  Bugfix/change in net.c/netGetNIdx
+*
+*     93-08-30 td  1.36  18  Bugfix/change in runtime_scan.c/res2Pt100
+*
+Edition   equ      18
+Revision  equ      24
+TrapLib   equ      11
+Objct     equ      1
+ReEnt     equ      128
+*
+*   long errno, _mtop, _stbot;
+*
+          vsect
+errno:    ds.l 1
+_mtop:    ds.l 1
+_stbot:   ds.l 1
+          ends
+
+Typ_Lang  equ      (TrapLib<<8)+Objct
+Attr_Rev  equ      (ReEnt<<8)+Revision
+          psect    traphand,Typ_Lang,Attr_Rev,Edition,0,TrapEnt
+          dc.l     TrapInit
+          dc.l     TrapTerm
+
+          org     0
+S.d0      do.l    1
+S.a0      do.l    1
+S.a6      do.l    1
+S.func    do.w    1
+S.vect    do.w    1
+S.trapPc  do.l    1
+S.pc      do.l    1
+S.X       do.l    1
+
+TrapEnt:  movem.l d0/a0,-(a7)               save d0, a0
+          move.w  S.func(a7),d0             get trap no
+          cmpi.w  #maxTrapNo,d0
+          bcc.s   FuncErr                   illegal trap no < 0 or > MAX_TRAP_NO
+*
+*          move.l  d1,-(a7)
+*          move.l  S.X(a7),d1
+*          movem.l d0-d7/a0-a7,-(a7)
+*          bsr     debugSkrift
+*          movem.l (a7)+,d0-d7/a0-a7
+*          move.l  (a7)+,d1
+*
+          lea     BranchT(pc),a0            a0 point to jump table
+          asl.w   #1,d0                     d0 is word offset in table
+          move.w  (a0,d0.w),d0              get value from that entry
+*
+* Next 2 lines are new as of 920318
+*
+          andi.l  #$0000ffff,d0
+          lea.l   (a0,d0.l),a0              add base, get address to routine
+*
+* instead of next line
+*          lea.l   (a0,d0.w),a0              add base, get address to routine
+*
+          move.l  a0,S.trapPc(a7)           replace with jump table value
+          move.l  S.pc(a7),_mtop(a6)        save callers PC
+          lea.l   retAddr(pc),a0            a0 := routine for restoring a6
+          move.l  a0,S.pc(a7)               After 
+          movem.l (a7)+,d0/a0               Restore d0,a0
+          move.l  (a7)+,_stbot(a6)          Save callers data base registerr
+          addq.l  #4,a7                     Skip func# and vector# for trap
+          clr.l   errno(a6)                 No error
+          rts                               Jump to address in jump table
+
+TrapInit  movem.l  (a7)+,a6-a7
+          rts
+
+FuncErr   movem.l (a7)+,d0/a0/a6
+          addq.l  #8,a7
+          rts
+
+retAddr   move.l  _mtop(a6),-(a7)           Push callers PC
+*
+* should pass errno to calling module, but for now we skip it
+*
+          movea.l _stbot(a6),a6             Restore data base register
+no_impl_yet
+          rts                               Resume execution after callers call
+
+TrapTerm  os9     F$Exit
+
+*
+* Jump table:
+*
+*
+jump      MACRO
+          dc.w    \1-BranchT
+          ENDM
+
+BranchT   jump    timerLeft              * jump    pid1
+          jump    enter_calendar
+          jump    calActiveIn            * pid3
+          jump    PULS_2
+          jump    netClearAlarm
+          jump    _markAlarm
+          jump    _unmarkAlarm
+          jump    _packAlarms
+          jump    pid
+          jump    obsolete               * Ni1000
+          jump    ANAIN_1
+          jump    ANAOUT_1
+          jump    DIGIN_1
+          jump    DIGOUT_1
+          jump    color
+          jump    checkLevel
+          jump    checkGlitchRaise
+          jump    checkGlitchFall       added 920415
+          jump    _initScan             * checkCalendarRaise
+          jump    _initMain             * checkCalendarFall
+          jump    deltatime
+          jump    colour_of_day
+          jump    linkDataModule
+          jump    createDataModule
+          jump    unlinkDataModule
+          jump    metaValue
+          jump    metaId
+          jump    metaType
+          jump    metaLock
+          jump    metaName
+          jump    display
+          jump    enter
+          jump    editVariable
+          jump    editVariable              dummy entry      
+*          jump    edit             
+          jump    showVariables
+          jump    swdctime
+          jump    swdctime                 * xxxswdctime
+          jump    readAlarm
+          jump    obsolete
+          jump    obsolete
+          jump    netActiveABCD            * COUNTER_1
+          jump    password
+          jump    getLevel
+          jump    timerInit
+          jump    timerReady
+          jump    optoPower
+          jump    battVoltage
+          jump    Pt1000
+          jump    count
+          jump    Ni1000LG
+          jump    netConfirmedABCD       * count_1
+          jump    obsolete               * count_2
+          jump    set_time
+          jump    Ni1000DIN
+          jump    TEMP_1
+          jump    getRelTime
+          jump    setTime
+          jump    Pt100_150
+          jump    Pt100_500
+          jump    battLow
+          jump    kurva
+          jump    tvpump
+          jump    metaSize
+          jump    account
+          jump    alarm_active
+          jump    PULS_1
+          jump    getTime
+          jump    enter_kurva
+          jump    getExtern
+          jump    putExtern
+          jump    netSetHost
+          jump    metaRemote
+          jump    metaRemoteData
+          jump    timerCancel
+          jump    isTimerInit
+          jump    netGetNoOfAlarms
+          jump    netGetAlarmText
+          jump    netConfirmAlarm
+          jump    netGetIdxVar
+          jump    netPutIdxVar
+          jump    netGetUpdated
+          jump    netSetRemote
+          jump    checkCalendarLevel
+          jump    netAckAlarm
+          jump    netGetCal
+          jump    netSetCal
+          jump    netGetNIdxVar
+          jump    metaRemoteNode
+          jump    callDbg
+          jump    _clearContext
+          jump    _alarmDisplay
+          jump    _closeConnection
+          jump    metaAlias
+          jump    metaRemoteId
+          jump    incDec
+          jump    checkAccess
+          jump    Staefa_PTC_150
+          jump    firstFreeTimer
+          jump    filterFkn
+          jump    netRebootNode
+          jump    netGetMem
+          jump    netPutMem
+          jump    netNew
+          jump    _initSubrFcn
+          jump    startDownCounter
+          jump    alarmStatus
+          jump    Freq
+          jump    res2PT100
+          jump    RES_280
+
+maxTrapNo equ     (*-BranchT)/2
+
+obsolete
+          rts                               Resume execution after callers call
+
+          ends
+  
+  
+ 

@@ -1,0 +1,25 @@
+/*
+! The string 
+'Copyright (c) 1993 by'
+! is encoded as;
+*/
+static unsigned char copyrightNotice[] = {
+  0x15, 0x52, 0x3d, 0x4d, 0x34, 0x46, 0x2f, 0x48, 0x20, 0x54, 0x74, 0x5c, 
+  0x3f, 0x16, 0x36, 0x07, 0x3e, 0x07, 0x34, 0x14, 0x76, 0x0f
+};
+/*
+! Use the following procedure to decode it;
+*/
+void printCopyright()
+{
+  int seed = 17;
+  int len;
+  unsigned char *str;
+  str = copyrightNotice;
+  len = *str++;
+  for (;len; len--) {
+    printf("%c", *str ^ seed);
+    seed = *str++;
+  }
+  printf("\n");
+}

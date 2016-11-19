@@ -1,0 +1,17 @@
+File ROUTE.C:
+        return MSG_SACK;
+        return MSG_VERSION;
+        return MSG_GETSTAT;
+        return MSG_SETSTAT;
+        return MSG_SHELL;
+        return MSG_CLOSE_PCT;
+        return MSG_METHOD_I;
+        return MSG_METHOD_II;
+        return MSG_GETCAL;
+        return MSG_SETCAL;
+        return MSG_SETVAR;
+        return MSG_GETALARM;
+        return MSG_RECSTAT;
+        return MSG_GETALARM_MSG;
+        return MSG_CONFIRM_ALARM;
+    return MSG_GARBAGE;

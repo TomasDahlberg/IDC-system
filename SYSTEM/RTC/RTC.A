@@ -1,0 +1,161 @@
+Edition equ 1
+ use ..\defs\oskdefs.d
+
+Typ_Lang set (Sbrtn<<8)+Objct
+Attr_Revs set ((ReEnt+SupStat)<<8)+0
+ psect RTprog,Typ_Lang,Attr_Revs,Edition,0,Entry
+
+Entry bra GetTime
+
+SetTime move.l d1,-(sp) save d1 data
+ move.b #0,d1 seconds register
+ bsr Write3003
+ bcs.s SetTime9 no chip?
+ lsr.l #8,d0
+ move.b #1,d1 minutes register
+ bsr Write3003
+ lsr.l #8,d0
+ move.b #2,d1 hours register
+ bsr Write3003
+ move.l (sp)+,d0 get d1 data
+ move.b #3,d1 day register
+ bsr Write3003
+ lsr.l #8,d0
+ move.b #4,d1 month register
+ bsr Write3003
+ lsr.l #8,d0
+ divu #100,d0 make div by 100
+ swap d0 get year nr
+ move.b #5,d1 year register
+ bsr Write3003
+ moveq #0,d1
+SetTime9 rts
+
+GetTime clr.l d0
+ movem.l d0-d1,-(sp)
+ move.b #0,d1 seconds register
+ bsr Read3003
+ move.b d0,3(sp)
+ move.b #1,d1 minutes register
+ bsr Read3003
+ move.b d0,2(sp)
+ move.b #2,d1 hours register
+ bsr Read3003
+ move.b d0,1(sp)
+ move.b #3,d1 day register
+ bsr Read3003
+ move.b d0,7(sp)
+ move.b #4,d1 month register
+ bsr Read3003
+ move.b d0,6(sp)
+ move.b #5,d1 year register
+ bsr Read3003
+ andi.w #$00FF,d0 clear msbs
+ add.w #1900,d0 add base
+ cmp.w #1990,d0 ok?
+ bhs.s GetTime9 yes..
+ add.w #100,d0 add one hundred for good measure
+GetTime9 move.w d0,4(sp) save year
+ moveq #0,d1 clear carry
+ movem.l (sp)+,d0-d1 return data
+ rts
+
+*
+* Wait3003
+*   this subroutine must be called to
+*   check if an m3003 device is present
+*   if not an E$NoClk error code is returned
+*   Wait3003 will wait until the chip is
+*   ready for a read or write operation
+*
+Wait3003 movem.l d0-d1,-(sp) save callers registers
+ move.w #10,d1 nr of attempts to read rtc
+Wait3003a move.b $310000,d0 get rtc status (or bus data)
+ andi.b #$0F,d0 keep lsb nibble
+ beq.s Wait3003b ok to use rtc?
+ move.l #1,d0 nr of ticks
+ OS9 F$Sleep zzz...
+ sub.w #1,d1 subtract attempts
+ bne.s Wait3003a more?
+ move.w #E$NoClk,6(sp) set error msg
+ ori.b #Carry,ccr set carry
+Wait3003b movem.l (sp)+,d0-d1
+ rts
+
+*
+* Write3003
+*   subroutine to write any data register
+*   in the M3003 chip
+*
+* passed: (d0.b) = decimal value 0-99
+*         (d1.b) = register nr
+*
+Write3003 bsr Wait3003 check if chip is ready
+ bcs.s Write3009 no chip?
+ move.b d1,$310000 write address register nr
+ clr.l d1 sweep high order bits in d1
+ move.b d0,d1 move byte into d1
+ divu #10,d1 get tens and ones digits
+ move.b d1,$310000 write tens digit
+ swap d1
+ move.b d1,$310000 write ones digit
+ moveq #0,d1 no error
+Write3009 rts
+
+*
+* Read3003
+*   subroutine to read any data register in
+*   the M3003 chip
+*
+* passed:  (d1.b) = register nr to read
+* returns: (d0.b) = decimal data 0-99
+*
+Read3003 bsr Wait3003 check if chip is ready
+ bcs.s Read3009 no chip?
+ move.b d1,$310000 write address register nr
+ move.b $310000,d0 get tens digit
+ andi.b #$0F,d0 keep lsb nibble
+ mulu #10,d0 make decimal nr
+ move.b $310000,d1 get ones digit
+ andi.b #$0F,d1 keep lsb nibble
+ add.b d1,d0 combine into decimal number
+ moveq #0,d1 no error
+Read3009 rts
+
+*
+* Sts3003
+*   read status data from M3003 chip
+*
+* passed: (d1.b) = register nr (usually 15)
+* returns: (d0.b) = hex byte
+*
+Sts3003 bsr Wait3003 wait for chip ready
+ bcs.s Sts3009 error?
+ move.b d1,$310000 select register
+ move.b $310000,d0 get into d0
+ asl.w #4,d0 shift
+ move.b $310000,d1 get into d1
+ andi.b #$0F,d1
+ or.b d1,d0 combine into d0
+ moveq #0,d1 no error
+Sts3009 rts
+
+*
+* Set3003
+*   write status data to M3003 chip
+*
+* passed: (d0.b) = hex byte
+*         (d1.b) = register nr (usually 15)
+*
+Set3003 bsr Wait3003 wait for chip ready
+ bcs.s Set3009 error?
+ move.b d1,$310000 select register
+ move.b d0,d1 get into d1
+ lsr.w #4,d0 get tens
+ move.b d0,$310000 write tens
+ move.b d1,$310000 write ones
+ moveq #0,d1 no error
+Set3009 rts
+
+ ends
+

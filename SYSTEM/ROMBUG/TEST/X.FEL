@@ -1,0 +1,56 @@
+Microware OS-9/68000 Cross Macro Assembler V1.9  94/03/24  13:07  Page     1
+ x.a
+ - 
+*** warning - absolute addressing ***
+00074 0072 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00074 007c 13c0+           move.b   d0,$308001     
+*** warning - absolute addressing ***
+00079 0086 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00079 0090 13c0+           move.b   d0,$308001     
+*** warning - absolute addressing ***
+00082 0098 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00082 00a2 13fc+           move.b   #$1,$308000    
+*** warning - absolute addressing ***
+00082 00aa 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00082 00b4 13fc+           move.b   #$0d,$308000   
+*** warning - absolute addressing ***
+00082 00bc 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00082 00c6 13fc+           move.b   #$38,$308000   
+*** warning - absolute addressing ***
+00082 00ce 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00082 00d8 13fc+           move.b   #$6,$308000    
+*** warning - absolute addressing ***
+00096 00fc 0839+           btst     #$7,$308000    
+*** warning - absolute addressing ***
+00097 0106 13fc+           move.b   #$c0,$308000   
+*** warning - absolute addressing ***
+00203 0192 13fc            move.b   #SCLK,qsop1    
+*** warning - absolute addressing ***
+00204 019a 13fc            move.b   #SSEL8,qsop1   
+*** warning - absolute addressing ***
+00205 01a2 13fc            move.b   #SDO,qrop1     
+*** warning - absolute addressing ***
+00210 01b4 0839            btst.b   #SDI_V,qip1    
+*** warning - absolute addressing ***
+00213 01c4 13fc not_set    move.b   #SCLK,qrop1    set clock line high
+*** warning - absolute addressing ***
+00214 01cc 13fc            move.b   #SCLK,qsop1    set clock line low
+*** warning - absolute addressing ***
+00218 01de 13fc            move.b   #SSEL8,qrop1   
+*** warning - absolute addressing ***
+00267 0262 1039 Wait3003a  move.b   $310000,d0     get rtc status (or bus data)
+*** warning - absolute addressing ***
+00289 0292 13c1            move.b   d1,$310000     write address register nr
+*** warning - absolute addressing ***
+00290 0298 1039            move.b   $310000,d0     get tens digit
+*** warning - absolute addressing ***
+00293 02a6 1239            move.b   $310000,d1     get ones digit
+Errors: 00000
+Memory used: 0k
+Elapsed time: 1 second(s)

@@ -1,0 +1,49 @@
+$ list bug.c
+
+#include <stdio.h>
+
+int main()
+{
+  double qw;
+  
+  qw = 1e-100;
+  while (1)
+  {
+    printf("%f\n", qw);
+  }
+}
+
+$ ident -m cio
+Header for:      cio
+Module size:     $4684       #18052
+Owner:           1.0
+Module CRC:      $E9ADF1     Good CRC
+Header parity:   $7E4C       Good parity
+Edition:         $6          #6       
+Ty/La At/Rev     $B01        $C009    
+Permission:      $555        -----e-r-e-r-e-r
+Trap Hnlr, 68000 obj, Sharable, Sticky Module
+
+$ cc -i bug.c
+
+'bug.c'
+cpp:
+c68:
+o68:
+r68:
+l68:
+$ bug
+0.000000
+0.0000000
+0.00000000
+0.000000000
+0.0000000000
+0.00000000000
+0.000000000000
+0.0000000000000
+0.00000000000000
+0.000000000000000
+0.0000000000000000
+0.00000000000000000
+
+

@@ -1,0 +1,31 @@
+RELS\visionCo.r: visionCo.c
+		xcc -ixR=RELS visionCo.c -v=..\defs -v=..
+
+RELS\minicall.r: minicall.c
+		xcc -ixR=RELS minicall.c 
+
+RELS\mini.r:	mini.c
+		xcc -ixR=RELS mini.c -v=..\defs
+
+RELS\vis.r:	RELS\visionCo.r RELS\minicall.r RELS\mini.r
+		copy RELS\visionCo.r/b+RELS\minicall.r+RELS\mini.r RELS\vis.r
+
+RELS\lib.l:	\idc\lib\idcio.l \idc\lib\idcutil.l
+		copy \idc\lib\idcio.l/b+\idc\lib\idcutil.l RELS\lib.l
+
+CMDS\visionCo:	RELS\vis.r RELS\lib.l
+		xcc -ixF=CMDS\visionCom RELS\vis.r -l=RELS\lib.l
+		rem fixmod -ua=801b CMDS\visionCom
+
+RELS\route.r:	route.c
+		xcc -ixR=RELS route.c
+
+RELS\routeX.r:	RELS\route.r RELS\visutil.r
+		copy RELS\route.r/b+RELS\visutil.r RELS\routeX.r
+
+CMDS\route:	RELS\routeX.r RELS\lib.l
+		xcc -ixF=CMDS\route RELS\routeX.r -l=RELS\lib.l
+
+RELS\visutil.r:	visutil.c
+		xcc -ixR=RELS visutil.c -v=..\defs -v=..
+

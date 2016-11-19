@@ -1,0 +1,12 @@
+New prom id file is 'prom1890.id'
+Old prom id file is 'prom1880.id'
+
+
+            New PROM                                 Old PROM
+Size     Rev Ed# CRC    Module name      Size     Rev Ed# CRC    Module name
+====================================     ====================================
+   32432  25  24 efdf31 visionCom    <->    32454  25  23 b6b549 visionCom   
+   50060  24  17 d69ae4 idcio        <->    50052  24  16 6c3659 idcio       
+   13098  11  10 98cdc7 phyio        <->    12616  11   9 9137f2 phyio       
+   34596  13   9 179854 slave        <->    34332  12   8 dfa049 slave       
+   35076  21   8 30abdc server       <->    35078  21   7 11cf69 server      

@@ -1,0 +1,72 @@
+type     set      (14<<8)+1 
+revs     set      (160<<8)+1
+         psect    v,type,revs,1,256,jmptable
+
+* 00000030 00000080  offset to execution entry point
+* 00000034 00000000  offset to exception entry 
+* 00000038 00000054  data storage requirement
+
+  dc.b $b0,$bd,$b0,$bd
+  dc.b ">>>>>>>>>>>>>>>>from the disk of Robert Doggett <<<<<<<<<<<<<<<<"
+*0000003c b0bd      dc.w       $b0bd
+*0000003e b0bd      dc.w       $b0bd
+*00000040 3e3e      dc.w       $3e3e
+*00000042 3e3e      dc.w       $3e3e
+*00000044 3e3e      dc.w       $3e3e
+*00000046 3e3e      dc.w       $3e3e
+*00000048 3e3e      dc.w       $3e3e
+*0000004a 3e3e      dc.w       $3e3e
+*0000004c 3e3e      dc.w       $3e3e
+*0000004e 3e3e      dc.w       $3e3e
+*00000050 6672      bne.s      $c4
+*00000052 6f6d      ble.s      $c1
+*00000054 20746865  movea.l    101(a4,d6.l),a0
+*00000058 2064      movea.l    -(a4),a0
+*0000005a 6973      bvs.s      $cf
+*0000005c 6b20      bmi.s      $7e
+*0000005e 6f66      ble.s      $c6
+*00000060 2052      movea.l    (a2),a0
+*00000062 6f62      ble.s      $c6
+*00000064 6572      bcs.s      $d8
+*00000066 7420      moveq      #32,d2
+*00000068 446f6767  neg.w      26471(a7)
+*0000006c 6574      bcs.s      $e2
+*0000006e 7420      moveq      #32,d2
+*00000070 3c3c3c3c  move.w     #$3c3c,d6
+*00000074 3c3c3c3c  move.w     #$3c3c,d6
+*00000078 3c3c3c3c  move.w     #$3c3c,d6
+*0000007c 3c3c3c3c  move.w     #$3c3c,d6
+
+
+*00000080 008e			offset to init routine         38dc55
+*	  0092			read routine         38dcc6
+*         008e			write routine        38dcac
+*00000086 009c			getstat routine      38dcf8
+* 	  009c			setstat routine      38dd24
+*         008e			terminate routine    38dcc2
+*0000008c 0000			exception error routine
+
+jmptable:
+        dc.w    INIT
+        dc.w    read
+        dc.w    write
+        dc.w    getstat
+        dc.w    setstat
+        dc.w    terminate
+        dc.w    0
+
+INIT:
+write:
+terminate:
+      moveq      #0,d1
+      rts       
+read:
+      move.w     #$d3,d1		error 211 = 
+      ori        #$1,ccr
+      rts       
+getstat:
+setstat:
+      moveq      #0,d1
+      rts       
+*dc.b			'null',0,0
+

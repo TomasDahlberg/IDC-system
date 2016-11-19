@@ -1,0 +1,1572 @@
+*
+* File:           nt82c684.a
+* Last modified:  91-11-16
+
+* Other files:    nt.a        - device descriptor module
+*                 ndesc.a     - generic network descriptor
+*
+
+Edition equ 29 current Edition number
+Revision equ 6 current revision
+
+*
+* Acia-device driver for XR82C684 quart devices
+* This driver was written completely from scratch
+* for the DT/08 system since the portpak supplied
+* drivers for MC68681 contained several severe
+* bugs and could not be used at all.
+*
+* This driver uses a shared memory area for shadow registers
+* in the OEM-global area, this means that it could
+* collide with some other manufacturers use of those
+* bytes. The register number is programmable in the first
+* byte of the device descriptors DevCon area. It should
+* be selected to a value different from what other drivers
+* use.
+*
+* This driver improves upon the normal os9 practice of
+* masking device interrupts while it is updating buffer
+* values, flags etc. This removes about 100 clock cycles
+* of overhead from each interrupt handled by this driver!!!
+* This is quite an improvement over the Microware supplied
+* drivers who program the SR-registers interrupt level bits
+* each time a shared register is to be updated.
+*
+* This driver does not suffer from deadlocks or overwriting
+* previous information since all access to shared values are
+* made by single instructions like clr, addq etc.
+*
+*  Ed.           History:
+* --------------------------------------------------------
+*  1. 90-10-11   first polled version                    C.O.
+*  2. 90-10-14   first interrupt driven version          C.O.
+*                support for 2 of the 4 subdevices
+*  3. 90-10-15   after a LONG hack the first production  C.O.
+*                talked to us and was delivered in the
+*                morning. Support for all 4 subdevices
+*                and the ticker device. The clock module
+*                is now trivial since its interrupt
+*                handler resides in this driver.
+*  4. 90-10-17   added network support for COLNET        C.O.
+*                also made it possible to use
+*                chips with more than 4 subdevices.
+*                address layout can now be on byte or
+*                word boundaries.
+*  5. 90-10-20   added SS_SSig and SS_Relea facility     C.O.
+*                to send signals to processes when
+*                data becomes available on the port.
+*  6. 90-10-20   added mode control for setting of baud  C.O.
+*                and parity with TMODE, the multidrop
+*                network can now be selected through
+*                the parity code on any port.
+*  7. 90-10-25   added shared shadow register support,   C.O.
+*                the method used is much faster than
+*                Microwares and does not need to disable
+*                the interrupts while updating the shared
+*                registers. It still uses the same D_Start
+*                area reserved for it in the kernels dataarea.
+*                The byte used is given in the first byte
+*                in the DevCon area of the device descriptor.
+*                also changed the F$IRQ to setup different
+*                entry points for the "A" and "B" sides
+*                of the device, this saves a few clockcycles
+*                on every input interrupt.
+*  8. 90-10-25   added output buffer flow-control.       C.O.
+*                the versions 1-7 have had an easy time only
+*                supporting one byte output at a time. This
+*                edition is fully interrupt driven for
+*                output transfers as well.
+*  9. 90-11-11   added tx-interrupt facility, driver is  C.O.
+*                now fully interrupt driven. Still no
+*                need to mask interrupts during change
+*                of states, OutHalt and InHalt are now
+*                properly handled at 10% and 90% buffer
+*                levels
+*  10. 90-11-12  Fixed problem with SS_Opt for other     C.O.
+*                ports than /term, updated descriptors
+*                for t1,t2,t3. Baudrate can be different
+*                for all ports
+*  11. 90-11-18  Fixed problem with SS_Opt for setting   C.O.
+*                other parity modes than NO PARITY.
+*                Now supprots ODD, EVEN, NONE and MULTI.
+*                Word length can be 5, 6, 7 or 8 bits and
+*                stopbits can be 1, 1.5 or 2. All can be
+*                set by tmode.
+*  12. 91-01-01  Cleaned up the code and added comments, C.O.
+*                this is no longer a test version. A
+*                module load facility has also been
+*                included.
+*  13. 91-01-07  Fixed buffer 90% full calculation error. D.A.
+*                It had gone undiscovered for a while that
+*                it was set to 110%.
+*  14. 91-01-07  Rewrote flowcontrol subroutines to use  C.O.
+*                an action flag instead of mixing bits in
+*                the ascii code. Also set the flag testing
+*                sequence correctly so that interrupts doesnt
+*                disturb things. Changed the buffer size
+*                to 1K.
+*  15. 91-01-08  Changed this file into a network driver C.O.
+*                Code based on Ed. 14 of the acia driver.
+*  16. 91-01-11  Changed to another protocol when sending C.O.
+*                bytes. It appears that the acia has
+*                a problem of setting the TxEmpty status
+*                bit when programmed in the multidrop mode.
+*                The flag works most of the time, but sometimes
+*                the TXHR register is not ready despite the
+*                flag and a write will lock up the chip.
+*                Even trying to program it by setting new
+*                parameters will not wake it up again.
+*                The solution was to use input interrupts
+*                for detecting when the byte has been sent.
+*                This obviously will work only on hardware
+*                where the Tx output is connected to the Rx
+*                input.
+*  17. 91-01-15  Changed SS_DCOn to output all bytes in the
+*                output buffer before changing to a new node.
+*                Added SS_DCOff to enable sending of command
+*                packets. Increased the throughput of the slave
+*                nodes interrupt handler.
+*  18. 91-02-24  Changed V_ERR so it does not report READ
+*                ERRORs back to OS/9. OS9 has problems with
+*                initializing the driver a second time if
+*                the path has read errors. Also changed
+*                the init subroutine to do a programmed
+*                reset on the chip using the command register.
+*                The errors are still logged in the driver,
+*                and can be read out.
+*  19. 91-02-24  Special handler for GROUP addresses has been
+*                installed. Node selection is now on a station
+*                or group basis. All stations in a group will
+*                receive the commands in parallell.
+*                Command handlers for SETGROUP and CLRGROUP
+*                have been installed. All nodes will be members
+*                in the Group 0. Commands are sent by prefixing
+*                the node number with _ss_dcoff(). The first
+*                byte written is the command, others are params.
+*                Added flow control to command execution, the
+*                node will return busy to the master while
+*                executing the command. This makes possible
+*                future expansion with very complex commands.
+*  20. 91-05-21  Split into several files, this one got to big.  C.O.
+*                nt82c684.a is the driver part, cm82c684.a is
+*                all the special commands we want to add.
+*                A number of new commands were also added.
+*  ??. xx-xx-xx  A large number of test versions were written    C.O.
+*                to get enough information about a bug that made
+*                packets go to the wrong destination some times.
+*                These have not been given any edition numbers.
+*  21. 91-07-12  Avoided a rather severe bug that made any       C.O.
+*                not selected slave read all the data bytes
+*                sent by the master as if they were command bytes,
+*                this gave strange results... Instead all nodes
+*                will read any packet sent by the master, just
+*                that the not selected nodes will throw everything
+*                away. Also added the subroutine NetStat to make
+*                it possible to get the status for any node we
+*                are currently not talking to. This means that the
+*                data buffers need not be flushed if checking for
+*                another nodes status. This improves throughput
+*                considerably.
+*  22. - 25.     Experimental versions without much success.     C.O.
+*  26. 91-10-29  This version includes monitor functions for nr  C.O.
+*                of packets read, written, errors etc. It can
+*                also reset the hardware if it receives an SS_DCOff
+*                call with a parameter value of -1 (reset chip),
+*                or -2 (reset both chip and buffers).
+*  27. 91-11-16  Removed an elusive bug that kept the master from
+*                releasing its hold on the 9th bit. This bug was
+*                fixed before by forcing all nodes to read the packets
+*                even those packets not intended for them. This
+*                problem is now solved and the fix has been removed.
+*                This also means that that 38400 baud (or even higher) can
+*                be used without problems. The device descriptor /nt1 (/nb1)
+*                can be used for the higher speed network. (But it must be
+*                used in all nodes).
+* 
+*  28. 92-11-12  Added monitor of Nrofpolls. Nrofreads now ok !
+*
+*  29. 93-04-06  TEST ! Added the 'move.b #2,$34001f' in routine DoReset
+*
+Typ_Lang set (Drivr<<8)+Objct
+Att_Revs set ((ReEnt+SupStat)<<8)+Revision
+ psect AciaDriv,Typ_Lang,Att_Revs,Edition,0,AciaEnt
+
+*
+* Configuration limits
+*
+MaxAddr equ 4095 maximum address passed over the network
+MaxNode equ 1023 maximum station identity number
+       
+*
+* Define buffer sizes
+*
+InSize set 1024 input buffer size
+OutSize set 1024 output buffer size
+FrmSize set 32 default frame size
+
+*
+* Device static storage
+*
+ vsect
+Shadow ds.l 1 pointer to shadow register
+Handler ds.l 1 current input interrupt handler
+InRead ds.l 1 input-buffer read pointer
+InWrite ds.l 1 input-buffer write pointer
+InEnd ds.l 1 input-buffer end pointer
+OutRead ds.l 1 output-buffer read pointer
+OutWrite ds.l 1 output-buffer write pointer
+OutEnd ds.l 1 output-buffer end pointer
+DevEven ds.l 1 pointer to even device half
+InCount ds.w 1 input-buffer level
+OutCount ds.w 1 output-buffer level
+IRQMask ds.w 1 device irq level mask
+Station ds.w 1 netnode station id code
+MsbReg ds.w 1 current address modifier
+LastAccs ds.w 1 last accessed node
+CmdAccs ds.w 1 node accessed during this command transfer
+NextAccs ds.w 1 the next node to access
+PkSize ds.w 1 current blocking size
+PkRdy ds.w 1 current ready size
+PkIn ds.w 1 current input block size
+PkOut ds.w 1 current output block size
+PkCmd ds.b 1 the last transmitted command byte
+PkMode ds.b 1 current packet transfer mode
+PkType ds.b 1 current packet type (0= data, $80= commands)
+PkFlag ds.b 1 remote station accept flag
+PkError ds.b 1 accumulated errors
+Select ds.b 1 node select (0 = not selected)
+MsgByte ds.b 1 the last message byte sent to the other node
+Parity ds.b 1 parity code value
+BaudRate ds.b 1 baudrate code value
+IrqFlags ds.b 1 enabled irqs for this device
+RtsBit ds.b 1 enable for RTS output
+InBuf ds.b InSize input data buffer
+OutBuf ds.b OutSize output data buffer
+FIX ds.l 1 testvalue
+Nrofreads ds.l 1 nr of good blocks read
+Nrofwrites ds.l 1 nr of good blocks written
+Nroferrors ds.l 1 nr of errors
+Nrofresets ds.l 1 nr of resets
+TxStatus ds.l 1 transmit status
+SigReady ds.w 3 signal: send signal on data ready
+SigPoll ds.w 3 signal: send signal on poll event
+Nrofpolls  ds.l 1 nr of polls
+ ends
+
+*
+* Definitions
+*
+
+* 82C684 register offsets (from device BASE address)
+
+EXARACR set $04 68681 auxilliary control register
+EXARImr set $05 68681 Interrupt mask/status register (from device BASE)
+EXARCTUR set $06 68681 counter/timer msb register
+EXARCTLR set $07 68681 counter/timer lsb register
+
+EXAROpcr set $0d output port configuration register
+EXARIp set $0d input port
+EXAROprSet set $0e output port register (set command)
+EXAROprRes set $0f output port register (reset command)
+
+* 82C684 register offset (for each SIDE of the device)
+
+EXARData equ 3 data register
+EXARCntl equ 2 control register
+EXARMode equ 0 mode register
+EXARBdSt equ 1 baudrate/status register
+ 
+ABbit equ 3 device "side" select bit
+EXAROffs equ (EXARBdSt-EXARMode)*8 subdevice addressing range
+EXARSubs equ 4 nr of subdevices in the chip
+EXARXtal equ EXAROffs*2+EXARCntl reg for xtal 1:1 command
+EXARImrB equ EXARImr-EXAROffs offset to Imr from B-side
+Ench equ $5 enable for tx and rx
+
+*
+* Interrupt flag bits
+*
+TxBitA equ 0 bitnr in Imr for tx-irq A
+RxBitA equ 1 bitnr in Imr for rx-irq A
+TmBitA equ 3 bitnr in Imr for timer
+TxBitB equ 4 bitnr in Imr for tx-irq B
+RxBitB equ 5 bitnr in Imr for rx-irq B
+
+*
+* Other flags and values
+*
+NETMSB equ $00 command byte for NETMSB command
+NETREADY equ $40 command byte for NETREADY command
+NETSEND equ $80 command byte for NETSEND command
+NETRECV equ $C0 command byte for NETRECV command
+
+*
+* Error flags for errors on the network
+*
+ERR$Time equ 0 error: Timed out
+ERR$Vfy equ 1 error: Line verification failed
+ERR$Dup equ 2 error: Illegal line activity
+
+SIGREADY equ 0
+SIGPOLL equ 'P'<<8
+
+ use defsfile
+ use dt08.m
+ use os9svc.m
+
+*
+* DELAY: macro to create delay on chip accessing
+*
+DELAY macro
+ exg d0,d1 switch regs
+ exg d0,d1 ..and restore
+ endm
+
+*
+* Device entry table called by os9
+*
+AciaEnt dc.w Init
+ dc.w Read
+ dc.w Write
+ dc.w GetStat
+ dc.w PutStat
+ dc.w TrmNat
+ dc.w 0 exception handler (0=none)
+
+*
+* Init
+*   initialize device static storage and
+*   place the device in the os9 interrupt system
+*
+* passed: (a1) = pointer to device descriptor module
+*         (a2) = pointer to device static storage
+*         (a4) = process descriptor
+*         (a5) = callers register stack
+*         (a6) = system globals
+*
+Init
+ movea.l a2,a0
+ adda.l #Shadow,a0
+ move.l a0,$40C save where netstat can get it
+ clr.l d0 clear d0
+ lea.l D_Start(a6),a0 get ptr to OEM-globals
+ move.l a0,Shadow(a2) save default pointer
+ move.w M$DevCon(a1),d0 get offset to shadow regs
+ beq.s Init02 not defined?
+ move.w (a1,d0.w),d0 get the offset value
+ move.l a0,d1 get base ptr
+ add.l d0,d1 add register nr to ptr
+ move.l d1,Shadow(a2) save updated pointer
+Init02 clr.w InCount(a2) set input-buffer empty
+ clr.w OutCount(a2) set output-buffer empty
+ clr.b IrqFlags(a2) no irqs enabled
+ clr.b PkType(a2) packets are data
+ clr.b PkFlag(a2) no accept flag
+ clr.b PkError(a2) no errors yet
+ clr.b PkMode(a2) mode is idle
+ clr.w PkIn(a2) no input packet
+ clr.w PkOut(a2) no output packet
+
+*
+* Event signals
+*
+ clr.w SigReady(a2) no signal on data ready
+ clr.w SigPoll(a2) no signal on polling event
+
+*
+* Network monitor values
+*
+ move.l #0,TxStatus(a2)
+ move.l #0,Nrofreads(a2)
+ move.l #0,FIX(a2)
+ move.l #0,Nrofwrites(a2)
+ move.l #0,Nroferrors(a2)
+ move.l #0,Nrofresets(a2)
+ move.l #0,Nrofpolls(a2)
+
+*
+* Buffers and pointers
+*
+ move.b #1,Select(a2) the master is always selected!
+ move.w #FrmSize,PkSize(a2) default packet size
+ move.w #1,LastAccs(a2) default last node
+ clr.w NextAccs(a2) no next node yet
+ move.w #$7FFF,MsbReg(a2) undefined address modifier
+ lea IdleIrq(pc),a0 get handler for idle state
+ move.l a0,Handler(a2) install idle handler
+ lea InBuf(a2),a0 get pointer to input-buffer
+ move.l a0,InRead(a2) set initial read-pointer
+ move.l a0,InWrite(a2) set initial write-pointer
+ lea InSize(a0),a0 get pointer to end
+ move.l a0,InEnd(a2) set end pointer
+ lea OutBuf(a2),a0 get pointer to output-buffer
+ move.l a0,OutRead(a2) set initial read-pointer
+ move.l a0,OutWrite(a2) set initial write-pointer
+ lea OutSize(a0),a0 get pointer to end
+ move.l a0,OutEnd(a2) set end pointer
+
+Init1
+ bsr NetId set network address
+ movea.l V_PORT(a2),a3 get device port
+ move.b #$40,EXARCntl(a3) reset error condition
+ DELAY
+ move.b #$20,EXARCntl(a3) reset the reciver
+ DELAY
+ move.b #$30,EXARCntl(a3) reset the transmitter
+ DELAY
+ move.b #$50,EXARCntl(a3) reset brk change
+ move.b PD_BAU-PD_OPT+M$DTyp(a1),d0 get baudrate code
+ bsr BaudCalc set baud rate
+ bcs.s InitExit
+ move.b PD_PAR-PD_OPT+M$DTyp(a1),d0 get parity code
+ bsr.s BitPar set comms mode
+ bcs.s InitExit
+
+Init15
+ movea.l V_PORT(a2),a3 get device port address (subdevice)
+ move.b M$Vector(a1),d0 get device irq vector nr
+ move.b M$Prior(a1),d1 get priority
+ move.b #1,RtsBit(a2) set RTS value A-side
+ lea IrqRutA(pc),a0 get A-side handler
+ btst #ABbit,V_PORT+3(a2) is A-side?
+ beq.s Init16 yes..
+ move.b #2,RtsBit(a2) set RTS value for B-side
+ lea IrqRutB(pc),a0 no.. is B-side
+
+Init16
+ OS9 F$IRQ install in irqs table
+ bcs.s InitExit os9 reports an error?
+
+Init2 move.b M$IRQLvl(a1),d0 get device hardware irq level
+ asl.w #8,d0 shift into mask bits
+ bset #SupvrBit+8,d0 set supervisor state bits
+ move.w d0,IRQMask(a2) save irq mask for future use
+
+Init20
+ movea.l V_PORT(a2),a3 get ptr to port
+ bsr SetData set data mode
+ move.b #10,EXARCntl(a3)
+ bsr RxEnable go and enable rx-interrupts
+ bsr TxDisable and disable tx-interrupts
+
+Init30 move.l a3,d0 get ptr to port
+ bclr #ABbit,d0 remove side bit
+ move.l d0,DevEven(a2) save pointer to even device
+
+Init99 moveq #0,d1 no errors
+InitExit rts
+
+ParDefs
+ dc.b $10 no parity
+ dc.b $04 odd parity
+ dc.b $18 no parity, no special protocol
+ dc.b $00 even parity
+
+BitsDefs
+ dc.b $03 8bits
+ dc.b $02 7bits
+ dc.b $01 6bits
+ dc.b $00 5bits
+
+StopDefs
+ dc.b $27 1 stopbit
+ dc.b $27 1.5 stopbit for 5bit data
+ dc.b $2F 2 stop bits
+ dc.b $FF illegal
+
+*
+* BitPar
+*   Setup the bits/parity/stopbits
+*   mode for this device
+*
+* passed: (d0.b) = os9 parity code word
+*
+BitPar
+ movea.l V_PORT(a2),a3 get device port
+ moveq.l #0,d2 sweep d2
+ andi.w #$00FF,d0 clear msbs
+ move.w d0,d1 copy parity value
+ andi.w #3,d1 isolate parity mode
+ lea.l ParDefs(pc),a0 point to parity mode bits
+ move.b (a0,d1.w),d2 get parity code
+ move.w d0,d1 get data bit size
+ lsr.w #2,d1 make index value
+ andi.w #3,d1 make legal index
+ lea.l BitsDefs(pc),a0 point to bits/char table
+ or.b (a0,d1.w),d2 add into d2
+ move.w d0,d1 get stop bit value
+ lsr.w #4,d1 make index value
+ andi.w #3,d1 make legal index
+ lea.l StopDefs(pc),a0 point to stop bit table
+ move.b (a0,d1.w),d1 get stop bit value
+ bmi BadMode ???
+ move.b #10,EXARCntl(a3) disable xmit & rec
+ DELAY
+ move.b #$10,EXARCntl(a3) set mode reg 1
+ DELAY
+ move.b d2,EXARMode(a3) set parity/bit
+ move.b d0,Parity(a2) save parity code
+ move.b d1,EXARMode(a3) set stopbits
+ moveq.l #0,d1 no errors
+ rts
+
+*
+* NetId
+*   read installation address switch
+*   to get netnode address
+*
+* returns: (d0.w) = address
+*
+NetId move.l V_PORT(a2),d0 get device port
+ andi.b #256-EXARSubs*EXAROffs,d0 remove lsb bits
+ movea.l d0,a0 set pointer to the chip
+ move.b EXARIp(a0),d0 get input byte 1
+ move.b EXARIp+EXAROffs*2(a0),d1 get input byte 2
+ lsr.w #4,d0 shift DIP1-4 into b0..b3
+ andi.w #$000F,d0 keep b0..b3
+ btst #1,d1 is DIP10 set?
+ beq.s NetId1 no...
+ bset #9,d0 set b9
+NetId1 asl.w #1,d1 shift DIP5-9 into b4..b8
+ andi.w #$01F0,d1 keep b4..b8
+ or.w d1,d0 add bits to d0
+*  
+* added 921111, if bit9 replace with 0
+*
+ btst #9,d0
+ beq.s nomaster
+ moveq.l #0,d0			master if msb (b9) was set
+nomaster
+*
+*
+*
+ move.w d0,Station(a2) setup node address
+ moveq.l #0,d1 no errors
+ rts
+
+*
+* BaudCalc
+*   setup the baudrate for this port
+*
+* passed: (d0.b) = the os9 baudrate code value
+*
+BaudCalc movea.l V_PORT(a2),a3 get device port
+ andi.w #$00FF,d0
+ cmpi.w #MaxBaud,d0 legal baud rate?
+ bge.s BadMode no..
+ asl.w #1,d0 make word offset
+ lea.l BaudTable(pc),a0 get table
+ move.b (a0,d0.w),d1 get rate value
+ lea.l BaudTable+1(pc),a0
+ clr.w d2 sweep d2
+ move.b (a0,d0.w),d2 get packet size
+ cmpi.b #N_A,d1 available?
+ beq.s BadMode no..
+ move.b #$80,EXARCntl(a3)
+ DELAY
+ move.b #$A0,EXARCntl(a3)
+ move.w d2,PkSize(a2) save frame size
+ move.b d1,EXARBdSt(a3) set baudrate in device
+ move.b d0,BaudRate(a2) save current baudcode
+ moveq.l #0,d1 no error
+ rts
+BadMode move.w #E$BMode,d1 set error code
+ ori.b #Carry,ccr set error
+ rts
+
+N_A equ $01 not available baudrate
+
+*
+* BaudTable
+*
+*   Table with control values for the baudrate
+*   selection. The controls are the baudrate generator
+*   init value and the number of bytes in a timeframe.
+*   32 bytes can be used at 9600 baud, slower baudrates
+*   should decrease this amount accordingly
+*
+BaudTable
+ dc.b $55,FrmSize  14.4 kbaud (0)
+ dc.b $66,FrmSize  28.8 kbaud (1)
+ dc.b $77,FrmSize  57.6 kbaud (2)
+ dc.b $88,FrmSize  115.2 kbaud (3)
+ dc.b N_A,0 (4)
+ dc.b N_A,0 (5)
+ dc.b N_A,0 (6)
+ dc.b N_A,0 (7)
+ dc.b N_A,0 (8)
+ dc.b N_A,0 (9)
+ dc.b N_A,0 (10)
+ dc.b N_A,0 (11)
+ dc.b N_A,0 (12)
+ dc.b N_A,0 (13)
+ dc.b $BB,FrmSize  9600 baud (14)
+ dc.b $CC,FrmSize  19200 baud (15)
+MaxBaud equ *-BaudTable
+
+*
+* SetAddr
+*   change the port into sending address bytes
+*   with the 9th bit set to a logic 1.
+*   (Only the master should call this subroutine)
+*
+SetAddr movea.l V_PORT(a2),a3 get device port
+ move.b #$10,EXARCntl(a3) select MR1
+ DELAY
+ move.b #$1F,EXARMode(a3) set address byte mode
+ rts
+
+*
+* SetData
+*   change the port into sending data bytes
+*   with the 9th bit set to a logic 0.
+*
+SetData movea.l V_PORT(a2),a3 get device port
+ move.b #$10,EXARCntl(a3) select MR1
+ DELAY
+ move.b #$1B,EXARMode(a3) set data byte mode
+ rts
+
+*
+* SetInput
+*   change the port into a receiving data port,
+*   normally the port is disabled so only address
+*   bytes will be received. Calling this subroutine
+*   will set the port to receive all bytes
+*
+SetInput movea.l DevEven(a2),a3 get pointer to device base
+ move.b RtsBit(a2),EXAROprRes(a3) reset RTS bit
+ movea.l V_PORT(a2),a3 get device port
+ move.b #9,EXARCntl(a3) disable tx, enable rx
+ clr.l TxStatus(a2)
+ rts
+
+*
+* SetOutput
+*   change the port direction register to output,
+*   this insures that the external bus driver
+*   drives the signal in the correct direction.
+*
+SetOutput movea.l DevEven(a2),a3 get pointer to device base
+ move.b RtsBit(a2),EXAROprSet(a3) set RTS bit
+ movea.l V_PORT(a2),a3 get device port
+ move.b #6,EXARCntl(a3) enable tx, disable rx
+ move.l #1,TxStatus(a2) Set TX active
+ rts
+
+*
+* SetUpload
+*   change the port direction register to output,
+*   this insures that the external bus driver
+*   drives the signal in the correct direction.
+*   input is also enabled.
+*
+SetUpload movea.l DevEven(a2),a3 get pointer to device base
+ move.b RtsBit(a2),EXAROprSet(a3) set RTS bit
+ movea.l V_PORT(a2),a3 get device port
+ move.b #5,EXARCntl(a3) enable tx, enable rx
+ move.l #1,TxStatus(a2) Set TX active
+ rts
+
+*
+* IssueCmd
+*   send a lowlevel network command to all
+*   nodes.
+*
+* passed:  d0.b = command byte to send
+*          a0.l = interrupt handler for taking care of
+*                 the interrupt at the end of the transfer
+*
+IssueCmds move.w LastAccs(a2),CmdAccs(a2) access the last node again
+*
+IssueCmd move.w CmdAccs(a2),d1 get last accessed node
+ andi.w #$0FC0,d1 extract msb bits
+ andi.b #$C0,d0 keep only command bits
+ beq.s IssueMsb is this the NETMSB command?
+ cmp.w MsbReg(a2),d1 same msb value?
+ beq.s IssueCmd10 yes... don't change it
+
+IssueMsb move.w d1,MsbReg(a2) set a new msb modifier
+ lsr.w #6,d1 make the NETMSB command byte
+ move.b d1,d0 get it into d0
+ lea MsbIrq(pc),a0 get interrupt handler for it
+ bra.s IssueCmd20 send the command
+
+IssueCmd10 move.w CmdAccs(a2),d1 get last node
+ andi.b #$3F,d1 extract the lsb bits
+ or.b d1,d0 combine with the command we want to send
+
+IssueCmd20 move.b d0,PkCmd(a2) save the command byte
+ move.b #1,PkMode(a2) set exec started
+ move.l a0,Handler(a2) install the new handler for it
+ bsr SetAddr change to address mode
+ bsr SetOutput and enable the output
+ move.b d0,EXARData(a3) send the command
+ move.b #8,EXARCntl(a3) disable tx
+ rts return to the caller 
+
+*
+* NetRecv
+*   tell the remote station to start receiving
+*   a packet
+*
+* returns:  possibly E$NotRdy
+*
+NetRecv move.w d0,-(sp) save callers d0
+ bsr MakeMsg compose message byte
+ move.b MsgByte(a2),d0 get message byte
+ andi.b #$7F,d0 remove bit 7
+ or.b PkType(a2),d0 set proper packet type
+ move.b d0,MsgByte(a2) set proper message byte
+ move.b #NETRECV,d0 get command byte
+ lea RecvIrq(pc),a0 the handler for it
+ moveq #10,d2 nr of ticks before timeout
+ bra.s NetPoll send the command
+
+*
+* NetSend
+*   tell the remote station to start transmitting
+*   its announced packet
+*
+* returns:  possibly E$NotRdy
+*
+NetSend move.w d0,-(sp) save callers d0
+ move.b #NETSEND,d0 command is NETSEND
+ lea SendIrq(pc),a0 get handler for it
+ moveq.l #10,d2 nr of ticks
+ bra.s NetPoll send the command
+
+NetStat move.w d0,-(sp) save callers d0
+ move.b #NETREADY,d0 command is NETREADY
+ lea ReadyIrq(pc),a0 get handler for it
+ moveq.l #3,d2 nr of ticks
+ clr.b PkError(a2) clear accumulated errors
+ bsr IssueCmd send command to the node in CmdAccs
+ bra.s NetPoll00 wait for reply
+
+*
+* NetReady
+*   check if the remote station is ready and
+*   read its message byte
+*
+* returns: possibly E$NotRdy
+*          PkIn(a2) contains the packet ready size
+*          PkFlag(a2) contains the clear to send flag
+*
+NetReady move.w d0,-(sp) save callers d0
+ move.b #NETREADY,d0 command is NETREADY
+ lea ReadyIrq(pc),a0 get handler for it
+ moveq.l #3,d2 nr of ticks
+
+*
+* NetPoll
+*   send a network command over the network
+*   and wait for the status
+*
+* passed: d0.b = command byte
+*         d2.l = nr of ticks to wait before timing out
+*         a0.l = handler for interrupts
+*
+NetPoll
+ clr.b PkError(a2) clear accumulated errors
+ bsr IssueCmds send the command
+NetPoll00 move.l d2,d0 get nr of ticks to sleep
+ pea NetPoll05(pc) return here in case of errors 
+ bsr TSleep zzz....
+ addq.l #4,sp skip pushed value
+NetPoll05  move.w (sp)+,d0 restore d0
+ lea IdleIrq(pc),a0 get new handler
+ move.l a0,Handler(a2) set new handler
+ tst.b PkMode(a2) command completed?
+ beq.s NetPoll10 yes...
+ bset #ERR$Time,PkError(a2) set timeout flag
+ addq.l #1,Nroferrors(a2)
+NetPoll10 tst.b PkError(a2) any other errors?
+ bne ErrNtRdy yes.. return not ready status
+ rts no.. return ready status
+
+*
+* Write
+*   write one character to the device buffers,
+*   also provide flowcontrol when the buffer
+*   gets down to empty. this routine
+*   performs no i/o it only sets flags for the
+*   interrupt server to see.
+*
+* passed: d0.b = byte to write
+*         (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = callers register stack
+*         (a6) = system globals
+*
+Write00 moveq.l #0,d2 assume we will sleep forever
+ tst.w Station(a2) is this the master?
+ bne.s WriteZZ no.. sleep until I/O interrupts
+ bsr.s NetReady get the status for the current node
+ bcs.s Write9 error?
+ moveq.l #2,d2 nr of ticks for the master
+ tst.b PkFlag(a2) can the other station receive one packet?
+ bpl.s WriteZZ no.. sleep a little
+ bsr NetRecv tell it to receive a packet
+ bcc.s Write ok?
+ rts return the status message
+WriteZZ bsr TSleep wait for interrupt
+Write cmpi.w #OutSize,OutCount(a2) can write more bytes to the buffer?
+ bhs.s Write00 no.. check sleep conditions
+ movea.l OutWrite(a2),a0 get write pointer
+ move.b d0,(a0)+ put byte in the buffer
+ cmpa.l OutEnd(a2),a0 at buffer end?
+ bne.s Write2 no...
+ lea OutBuf(a2),a0 get ptr to buffer start
+Write2 move.l a0,OutWrite(a2) save updated pointer
+ addq.w #1,OutCount(a2) add one to buffer level
+ moveq #0,d1 no error
+Write9 rts return status
+
+*
+* FlushOut
+*   Attempt to clear the output buffer by
+*   waiting for I/O events (or if we are
+*   the master by generating them)
+*   Call this repeatedly until the buffer
+*   is empty or an error is returned.
+*
+* returns: cc, carry set
+*          d1.w = apppropriate error message
+*
+FlushOut moveq.l #0,d2 assume forever
+ tst.w Station(a2) is this the master?
+ bne.s FlushZZ no... sleep
+ bsr NetReady ask the other node
+ bcs.s Flush9 error?
+ moveq.l #2,d2 nr of ticks for the master to sleep
+ tst.b PkFlag(a2) can we send another packet?
+ bpl.s FlushZZ no.. sleep for a while
+ bsr NetRecv tell the node to receive a packet
+ bcs.s Flush9 error?
+ rts return to the caller (status is ok)
+FlushZZ pea.l Flush5(pc) return here instead
+ bsr TSleep zzz...
+ addq.l #4,sp skip pushed value
+Flush5 moveq #0,d1 no error
+Flush9 rts return with status
+
+*
+* TrmNat
+*   this routine detaches the device from the
+*   irq system and disables all interrupts from
+*   its associated hardware.
+*
+* passed: (a1) = pointer to device descriptor module
+*         (a2) = device static storage
+*         (a4) = process descriptor pointer
+*         (a6) = system globals
+*
+TrmNat00 bsr.s FlushOut clear the output
+ bcs.s TrmNat1 error???
+TrmNat
+ move.w P$ID(a4),d0 get process id who is terminating this device
+ move.w d0,V_BUSY(a2) change device user to this process
+ move.w d0,V_LPRC(a2) and is also the last pid to use this device
+ tst.w OutCount(a2) any more chars waiting for output?
+ bne.s TrmNat00 yes.. wait for output irqs to die
+TrmNat1
+ movea.l V_PORT(a2),a3 get device port
+ bsr TxDisable remove tx-interrupts
+ bsr RxDisable remove rx-interrupts
+ move.b M$Vector(a1),d0 get device vector
+ suba.l a0,a0 set handler to 0
+ OS9 F$IRQ remove device from devs table
+ moveq #0,d1 return carry clear
+ rts
+
+*
+* Read
+*   this routine reads one byte from the device buffers
+*   and returns it to the caller (usually os9).
+*   it also performs flowcontrol when the buffer level
+*   goes down to 10%, note that no direct i/o is performed.
+*   this routine only sets flags for the interrupt server
+*   to see.
+*
+* passed: (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = pointer to callers register stack
+*         (a6) = system globals
+*
+Read00 moveq.l #0,d2 assume forever
+ tst.w Station(a2) is this the master?
+ bne.s ReadZZ no.. sleep
+ bsr NetReady get node status
+ bcs.s Read9 error?
+ moveq.l #2,d2 nr of ticks for the master to sleep
+ tst.w PkIn(a2) does it have any bytes ready?
+ beq.s ReadZZ no.. wait for a short time
+ bsr NetSend tell it to send the bytes
+ bcc.s Read ok?
+ rts return the status message
+ReadZZ bsr.s TSleep wait for interrupt
+Read tst.w InCount(a2) anything in the buffer?
+ beq.s Read00 no.. wait
+ movea.l InRead(a2),a0 get read pointer
+ move.b (a0)+,d0 get the next byte
+ cmpa.l InEnd(a2),a0 at buffer end?
+ bne.s Read1 no...
+ lea InBuf(a2),a0 get ptr to buffer start
+Read1 move.l a0,InRead(a2) save updated pointer
+ subq.w #1,InCount(a2) remove one from buffer leve
+ moveq #0,d1 no error msg
+Read2 clr.b V_ERR(a2) clear error status
+Read9 rts return with status
+
+*
+* Sleep
+*   this subroutine puts the caller process
+*   to sleep waiting for signals from the
+*   interrupt server, if the signal is S$Wake
+*   sleep returns to its caller, otherwise Sleep
+*   will return to the callers caller, thus
+*   sending the signal code to the caller of
+*   the device driver (usually os9).
+*
+Sleep moveq.l #0,d2 forever
+TSleep move.l d0,-(sp) save reg
+ move.w V_BUSY(a2),V_WAKE(a2) arrange for wakeup
+ move.l d2,d0 sleep for the nr of ticks given
+ OS9svc F$Sleep wait for an interrupt
+ move.w P$Signal(a4),d1 get signal
+ beq.s Sleep90 no signal?
+ cmpi.w #S$Intrpt,d1 deadly signal?
+ bls.s SleepEr yes..
+Sleep90 btst.b #Condemn,P$State(a4) has process died?
+ bne.s SleepEr yes.. return error
+ move.l (sp)+,d0 restore reg
+ rts return to caller
+SleepEr addq.l #8,sp remove caller from the stack
+
+*
+* GetStat
+*   this routine is called for every I$GetStt call
+*   made to this driver.
+*
+* Supported functions are:  SS_Ready, SS_EOF and SS_Opt
+*
+* passed: d0.w = function code
+*         (a1) = address of path descriptor
+*         (a2) = device static storage
+*         (a4) = process descriptor
+*         (a5) = pointer to callers register stack
+*         (a6) = system globals
+*
+Abort ori #Carry,ccr return Carry set
+ rts
+ErrNtRdy move.w #E$NotRdy,d1
+ bra.s Abort
+GetStat
+ cmpi.w #SS_Ready,d0 is it SS_Ready function?
+ bne.s GetStat10 no..
+ clr.l R$d1(a5) clear msbs of callers d1 register
+ tst.w Station(a2) is this the master?
+ bne.s GetStat00 no.. return buffer level
+ move.w LastAccs(a2),CmdAccs(a2) talk to the next node
+ bsr NetStat get status for this node
+ bcs.s ErrNtRdy not ready?
+ move.w PkIn(a2),d0
+ add.w InCount(a2),d0
+ move.w d0,R$d1+2(a5) return other nodes buffer level
+ bra.s GetStat99 no error
+GetStat00 move.w InCount(a2),R$d1+2(a5) return buffer level
+ beq.s ErrNtRdy error?
+ bra.s GetStat99 no error!
+
+GetStat10 cmpi.w #SS_EOF,d0 is it SS_EOF function?
+ beq.s GetStat99 yes.. SCF devs never returns EOF
+
+GetStat20 cmpi.w #SS_Opt,d0 is it SS_Opt function?
+ bne Unknown no...
+ move.b BaudRate(a2),PD_BAU(a1) set currently active baudrate
+ move.b Parity(a2),PD_PAR(a1) set currently active parity
+GetStat99 moveq #0,d1 no error return
+ rts
+
+*
+* PutStat
+*   this routine is called for every I$SetStt call made
+*   to this driver.
+*
+* Supported functions are: SS_Opt, SS_SSig, SS_Relea
+*                          SS_Open, SS_DCOn, SS_DCOff
+*
+PutStat
+ cmpi.w #SS_Opt,d0 is it set SS_Opt function?
+ bne.s PutStat10 no...
+PutStat1 move.b PD_BAU(a1),d0 get current baudrate
+ cmp.b BaudRate(a2),d0 has it changed?
+ beq.s PutStat2 no.. check parity
+ bsr BaudCalc calculate and set new baudrate
+ bcs.s PutStat3 error?
+PutStat2 move.b PD_PAR(a1),d0 get current parity/mode
+ cmp.b Parity(a2),d0 has comms mode changed?
+ beq.s GetStat99 no.. nothing has changed
+ bsr BitPar set bits/parity
+PutStat3 rts return to caller
+
+PutStat10 cmpi.w #SS_SSig,d0 is it SS_SSig function?
+ bne.s PutStat20 no..
+ move.w R$d2+2(a5),d0 get signal code
+ andi.w #$FF00,d0 keep msb byte to identify signal type
+ cmpi.w #SIGPOLL,d0 is it SIGPOLL?
+ bne.s PutStat12 no.. defaults to SIGREADY
+ lea.l SigPoll(a2),a0 signal to use
+ bra.s RegisterSig and register this signal
+
+PutStat12 lea.l SigReady(a2),a0 signal to use
+ bsr RegisterSig try to register this signal
+ bcs.s PutStat19 in use?
+ tst.w InCount(a2) any data available?
+ beq.s PutStat15 no...
+ clr.w SigReady(a2) release the signal
+ OS9svc F$Send send the signal now
+PutStat15 moveq #0,d1 no error
+PutStat19 rts
+
+RegisterSig tst.w (a0) is the signal busy?
+ bne ErrNtRdy yes.. report error
+ move.w PD_CPR(a1),d0 get callers pid
+ move.w PD_PD(a1),d2 get path
+ move.w R$d2+2(a5),d1 get signal code
+ andi.w #$00FF,d1 keep only lsb byte
+ movem.w d0-d2,(a0) set the signal
+ moveq.l #0,d1 no error
+ rts
+
+PutStat20 cmpi.w #SS_Relea,d0 is it SS_Relea function?
+ bne.s PutStat30
+ move.w PD_CPR(a1),d0 get pid
+ move.w PD_PD(a1),d2 get path
+ lea.l SigPoll(a2),a0 signal to examine
+ bsr ClearSig try to clear it
+ lea.l SigReady(a2),a0 signal to examine
+
+ClearSig cmp.w (a0),d0 is signal owned by this process?
+ bne.s ClearSig90 no.. exit
+ cmp.w 4(a0),d2 is it for this path?
+ bne.s ClearSig90 no.. exit
+ clr.w (a3) clear signal
+ClearSig90 moveq.l #0,d1 no error
+ rts
+
+PutStat30 cmpi.w #SS_Open,d0 is it SS_Open function?
+ beq PutStat1 yes..
+ cmpi.w #SS_DCOn,d0 is it SS_DCOn function?
+ beq.s PutStat50 yes..
+ cmpi.w #SS_DCOff,d0 is it SS_DCOff function?
+ beq.s PutStat60 yes.. 
+
+Unknown
+ move.w #E$UnkSvc,d1 Unknown service code
+ ori.b #Carry,ccr
+ rts
+
+PutStat45 move.w V_BUSY(a2),-(sp) push the current owner
+ move.w P$ID(a4),V_BUSY(a2) set temporary new device owner
+ bsr FlushOut move one packet to its destination
+ bcc.s PutStat46 Good packet?
+ clr.w OutCount(a2) remove all output
+ move.l OutRead(a2),OutWrite(a2) reset the pointers
+PutStat46 move.w (sp)+,V_BUSY(a2) pop the old owner
+PutStat50 tst.w Station(a2) is this the master?
+ bne.s PutStat59 no... cant use this function
+ tst.w OutCount(a2) more bytes to send?
+ bne.s PutStat45 yes..
+ move.w R$d2+2(a5),d0 get new node number
+ andi.w #$0FFF,d0 make it a legal node number
+ move.w d0,LastAccs(a2)
+ clr.w InCount(a2) flush the input buffer
+ move.l InRead(a2),InWrite(a2) fixup the pointers also
+ clr.b PkType(a2) set packet type to data
+PutStat59 moveq #0,d1 no error
+ rts
+
+PutStat60 move.w R$d2+2(a5),d0 get nodenr  
+ cmpi.w #$FFFF,d0 reset? 
+ beq.s DoReset yes..
+ cmpi.w #$FFFE,d0 big reset?
+ beq.s DoBigReset yes..
+ bsr.s PutStat50 select a new node
+ move.b #$80,PkType(a2) set packet type to commands
+ moveq #0,d1 no error
+ rts
+
+*
+* DoBigReset
+*   Reset the buffers and the chip.
+*   This flushes all input and output bytes
+*   not yet transmitted and then resets the chip
+*
+DoBigReset clr.w InCount(a2) input buffer is empty
+ move.l InWrite(a2),InRead(a2) reset pointers
+ clr.w OutCount(a2) output buffer is empty
+ move.l OutWrite(a2),OutRead(a2) reset pointers
+ clr.b PkType(a2) packets are data
+ clr.b PkFlag(a2) no accept flag
+ clr.b PkError(a2) no errors yet
+ clr.b PkMode(a2) mode is idle
+ clr.w PkIn(a2) no input packet
+ clr.w PkOut(a2) no output packet
+
+*
+* DoReset
+*   Reset the chip and any associated
+*   state values without disturbing any
+*   open paths.
+* 
+DoReset addq.l #1,Nrofresets(a2)
+
+ move.b #2,$34001f                       turn off netTx led !!!, 930406
+
+ lea IdleIrq(pc),a0 ptr to handler
+ move.l a0,Handler(a2)
+ bsr NetId set network address
+ movea.l V_PORT(a2),a3 get device port
+ move.b #$40,EXARCntl(a3) reset error condition
+ DELAY
+ move.b #$20,EXARCntl(a3) reset the reciver
+ DELAY
+ move.b #$30,EXARCntl(a3) reset the transmitter
+ DELAY
+ move.b #$50,EXARCntl(a3) reset brk change
+ bsr SetData
+ bsr SetInput
+ move.b BaudRate(a2),d0 get baudrate code
+ bsr BaudCalc set baud rate
+ bcs InitExit
+ move.b Parity(a2),d0 get parity code
+ bsr BitPar set comms mode
+ bcs InitExit
+ bsr WakeIrq end transfer!
+ moveq #0,d1
+ rts
+
+*
+* RxEnable
+*   enable rx-interrupts by programming the
+*   shared interrupt mask register for this
+*   device.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+RxEnable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A or B-side?
+ beq.s RxEnA is A-side!
+RxEnB bset #RxBitB,IrqFlags(a2) set interrupt enable B
+ bset #RxBitB,(a0) and also in shadow regs
+ move.b (a0),EXARImrB(a3) now program the device
+ rts
+RxEnA bset #RxBitA,IrqFlags(a2) set interrupt enable A
+ bset #RxBitA,(a0) and also in shadow regs
+ move.b (a0),EXARImr(a3) now program the device
+ rts
+
+*
+* RxDisable
+*   disable rx-interrupts by programming the
+*   shared interrupt mask register for this
+*   device.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+RxDisable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get pointer to shadow reg
+ btst #ABbit,V_PORT+3(a2) is A or B-side?
+ beq.s RxDisA is A-side!
+RxDisB bclr #RxBitB,IrqFlags(a2) disable rx interrupt
+ bclr #RxBitB,(a0) also in shadow regs
+ move.b (a0),EXARImrB(a3) now program the device
+ rts
+RxDisA bclr #RxBitA,IrqFlags(a2) disable rx interrupt
+ bclr #RxBitA,(a0) also in shadow regs
+ move.b (a0),EXARImr(a3) now program the device
+ rts
+
+*
+* TxEnable
+*   update the hardware to enable tx-interrupts
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+TxEnable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A/B-side?
+ beq.s TxEnA is A-side!
+
+TxEnB
+ bset #TxBitB,(a0) enable tx irqs
+ bset #TxBitB,IrqFlags(a2) enable flags also
+ move.b (a0),EXARImrB(a3) update Imr register
+ rts
+
+TxEnA
+ bset #TxBitA,(a0) enable tx irqs
+ bset #TxBitA,IrqFlags(a2) enable flags also
+ move.b (a0),EXARImr(a3) update Imr register
+ rts
+
+*
+* TxDisable
+*   update hardware and disable tx-interrupt
+*   requests from it.
+*
+* returns: (a0) = pointer to shadow register(s)
+*          (a3) = device port
+*
+TxDisable movea.l V_PORT(a2),a3 get device port
+ movea.l Shadow(a2),a0 get shadow reg ptr
+ btst #ABbit,V_PORT+3(a2) is A/B-side?
+ beq.s TxDisA is A-side!
+
+TxDisB
+ bclr #TxBitB,(a0) disable tx irqs
+ move.b (a0),EXARImrB(a3) update Imr register
+ bclr #TxBitB,IrqFlags(a2) remove from flags also
+ rts
+
+TxDisA
+ bclr #TxBitA,(a0) disable tx irqs
+ move.b (a0),EXARImr(a3) update Imr register
+ bclr #TxBitA,IrqFlags(a2) remove from flags also
+ rts
+
+*
+* IrqRutB
+*   this is the interrupt service entry for all
+*   B-side devices.
+*
+* passed: (a2) = device static storage
+*         (a3) = device port
+*         (a6) = system globals
+*
+IrqRutB move.b EXARImrB(a3),d0 get interrupt flags
+ and.b IrqFlags(a2),d0 remove inactive bits
+ beq.s IrqErrB not this device?
+ btst #RxBitB,d0 is it rx-interrupt?
+ bne.s IrqInA yes...
+IrqErrB ori.b #Carry,ccr set carry
+ rts
+
+*
+* IrqRutA
+*   this is the interrupt service entry for all
+*   A-side devices.
+*
+* passed: (a2) = device static storage
+*         (a3) = device port
+*         (a6) = system globals
+*
+IrqRutA move.b EXARImr(a3),d0 get interrupt flags
+ and.b IrqFlags(a2),d0 remove inactive bits
+ beq.s IrqErrA not this device?
+ btst #RxBitA,d0 is it rx-interrupt?
+ bne.s IrqInA yes..
+IrqErrA ori.b #Carry,ccr set carry
+ rts
+
+*
+* IrqInA
+*   this is the interrupt service subroutine for
+*   all input interrupts detected from this device.
+*
+IrqInA
+ move.b EXARBdSt(a3),d1 get status
+ andi.b #$50,d1 keep error bits
+ beq.s IrqInAA no errors?
+ or.b d1,V_ERR(a2) save accumulated errors
+ move.b #$40,EXARCntl(a3) reset error condition
+IrqInAA
+ move.b EXARData(a3),d0 get input data byte
+ movea.l Handler(a2),a0 get current input handler
+ jmp (a0) and call it
+
+
+************************************************************
+* Network input interrupt handlers
+************************************************************
+
+*
+* IdleMaster
+*   this is the interrupt handler for a master
+*   that has nothing to do.
+*
+IdleMast bra IdleIrqQ
+
+IdleIrq00 asl.w #6,d0 shift into msb bits
+ andi.w #$0FC0,d0 keep msb bits only
+ move.w d0,MsbReg(a2) save new address modifier
+ bra IdleIrqQ
+
+*
+* IdleIrq
+*   this is the interrupt handler for all slave
+*   nodes not activated by a command. all commands
+*   are started here.
+*
+*   0. is this the NETMSB command byte, if so use
+*      the 6 lsb bits to define a new msb value
+*      for this node.
+*   1. check the input addres bytes 6bit lsb field
+*      and add that to the current 6bit msb field
+*      producing a network address.
+*   2. compare the address to this stations identity.
+*      if a match is found, then execute the command.
+*   3. if not a direct command check if it is a group
+*      command. this is done by checking the group
+*      bitmap to see if this node is a member in the
+*      addressed group. if so only the NETRECV command
+*      is executed.
+*
+IdleIrq tst.w Station(a2) is this the master?
+ beq.s IdleMast yes.. exit
+ move.b d0,d1 get input byte
+ andi.b #$C0,d1 keep command bits
+ beq.s IdleIrq00 is NETMSB command?
+ andi.w #$003F,d0 get lsb bits
+ add.w MsbReg(a2),d0 add address modifier
+ move.w d0,LastAccs(a2) save last accessed node number
+ cmp.w Station(a2),d0 is it for this station?
+ beq.s IdleIrq10 yes.. check the command
+ clr.b Select(a2) node is not selected!
+ moveq #0,d1 no error
+ rts
+
+IdleIrq10 move.b d1,Select(a2) node is selected
+ cmpi.b #$40,d1 is it NETREADY command?
+ beq.s IdleIrq40 yes.. return a message byte
+ cmpi.b #$80,d1 is it NETSEND command?
+ beq.s IdleIrq80 yes.. start uploading bytes to the master
+
+IdleIrqC0 move.b #1,EXARCntl(a3) enable the receiver
+ lea SizeIrq(pc),a0 get new handler for the message byte
+ move.l a0,Handler(a2) and install it
+ moveq #0,d1 no error
+ rts
+
+IdleIrq80 bsr SetData enable data mode
+ bsr SetUpload enable the output
+ lea UpIrq(pc),a0 upload irq
+ move.l a0,Handler(a2) set new handler
+ bra.s UpIrq send the first byte
+
+IdleIrq40 bsr MakeMsg construct a message byte
+ bsr SetData change to data mode
+ bsr SetOutput enable output
+ move.b d0,EXARData(a3) return the byte
+ addq.l #1,Nrofpolls(a2) increase poll count, (added 921112)
+ move.b #8,EXARCntl(a3) disable tx
+ move.w SigPoll(a2),d0 send signal?
+ beq.s IdleIrqQ no..
+ move.w SigPoll+2(a2),d1 pid to send it to
+ clr.w SigPoll(a2) remove it
+ OS9svc F$Send send the signal
+
+IdleIrqQ btst #0,EXARBdSt(a3) more bytes?
+ bne IrqInA yes.. service immediately
+ moveq #0,d1 no error
+ rts
+
+*
+* UpIrq
+*   interrupt handler for uploading bytes
+*   to the other end, this output interrupt
+*   actually comes from the input interrupt
+*   bypassing the need to use the TXHR flag.
+*
+UpIrq tst.w PkOut(a2) more bytes?
+ beq WWakeIrq end of transfer!
+UpIrq10 movea.l OutRead(a2),a0 get read ptr
+ move.b (a0)+,EXARData(a3) send the next byte
+ cmpa.l OutEnd(a2),a0 is at end?
+ bne.s UpIrq20 no...
+ lea OutBuf(a2),a0 get ptr to start
+UpIrq20 move.l a0,OutRead(a2) update read ptr
+ subq.w #1,OutCount(a2) subtract from level
+ subq.w #1,PkOut(a2) subtract bytes to go
+ bne.s UpIrq90 more?
+ move.b #8,EXARCntl(a3) disable tx after the last byte
+UpIrq90 bra.s IdleIrqQ check more input
+
+*
+* DownIrq
+*   this node is in the download state, it will
+*   store the bytes in the device buffer using
+*   the normal signalling protocol to tell the
+*   users process what happens. after that
+*   we check if the network fram e is at its end
+*   and if so we will wakeup any waiting poll
+*   process.
+*
+DownIrq movea.l InWrite(a2),a0 get write pointer
+ move.b d0,(a0)+ and put it in the buffer
+ cmpa.l InEnd(a2),a0 at end?
+ bne.s DownIrq10 no...
+ lea InBuf(a2),a0 get buffer start
+DownIrq10 move.l a0,InWrite(a2) save updated pointer
+ addq.w #1,InCount(a2) add one to buffer level
+ subq.w #1,PkIn(a2) subtract bytes to go
+ bne.s IdleIrqQ check more input
+ move.w SigReady(a2),d0 send signal on data ready?
+ beq RWakeIrq no..
+ clr.w SigReady(a2) remove it
+ move.w SigReady+2(a2),d1 get signal to send
+ OS9svc F$Send
+ bra.s RWakeIrq wakeup...
+
+*
+* SizeIrq
+*   this node has just received a message byte
+*   (SIZEBYTE) this is defined by
+*   bit 8 = 0 if the other node cannot accept more
+*           data and 1 if the node is ready to receive
+*   bits 7-1 contains a number 0-127 stating how
+*           many bytes the other node is ready to send.
+*   Store the information in the values PkIn(a2) and
+*   PkFlag(a2). If this node is the master node we
+*   must return to the polling process with this information.
+*   If this node is a slave node we start the download
+*   using the received information.
+*
+SizeIrq move.b d0,PkFlag(a2) save accept flag
+ andi.w #$007F,d0 make bytecount value
+ move.w d0,PkIn(a2) save input block size
+ beq.s WakeIrq empty packet?
+ tst.w Station(a2) is this the master?
+ beq.s WakeIrq yes.. always wakeup
+ lea DownIrq(pc),a0 get new handler
+ move.l a0,Handler(a2) install it!
+ bra IdleIrqQ check more input
+
+*
+* ReadyIrq
+*   the master has received its own echo
+*   of the NETREADY command byte, check the
+*   integrity of the network and change to
+*   input mode so the reply message can be
+*   received.
+*
+ReadyIrq cmp.b PkCmd(a2),d0 same byte?
+ bne.s ErrorIrq no.. set verification failed status
+ move.b #1,EXARCntl(a3) enable the receiver
+ lea SizeIrq(pc),a0 get new handler
+ move.l a0,Handler(a2) install it!
+ rts return to caller
+
+*
+* MsbIrq
+*   the master has received its own echo
+*   of the NETMSB command byte. check the
+*   integrity of the network and immediately
+*   transmit the next NETREADY command.
+*
+MsbIrq cmp.b PkCmd(a2),d0 same byte?
+ bne.s ErrorIrq no.. set verification failed status
+ lea ReadyIrq(pc),a0 get new handler
+ move.b #NETREADY,d0 command byte for NETREADY
+ bra IssueCmd send the next command
+
+*
+* SendIrq
+*   the master has received its own echo
+*   of the NETSEND command byte. check the
+*   integrity of the network and immediately
+*   change to receiving the bytes from the
+*   other node.
+*
+SendIrq cmp.b PkCmd(a2),d0 same byte? 
+ bne.s ErrorIrq no.. set verification failed status
+ move.b #1,EXARCntl(a3) enable the receiver
+ lea DownIrq(pc),a0 get new handler
+ move.l a0,Handler(a2) install it
+ rts
+
+*
+* ErrorIrq
+*   all failed verifications end here
+*   an error flag will be set so the
+*   master can see it.
+*
+ErrorIrq bset #ERR$Vfy,PkError(a2) set verification error
+ addq.l #1,Nroferrors(a2) add one error
+ bra.s WakeIrq
+
+WWakeIrq addq.l #1,Nrofwrites(a2) add one packet
+ bra.s WakeIrq
+
+RWakeIrq addq.l #1,Nrofreads(a2) add one packet
+*
+* WakeIrq
+*   all nodes terminating an interrupt state
+*   will call here. in the master this is also
+*   responsible for waking up the polling process
+*
+WakeIrq clr.b PkMode(a2) remove the current transfer mode
+ move.b #10,EXARCntl(a3) disable tx, disable rx
+ clr.l TxStatus(a2) tx off
+ lea IdleIrq(pc),a0 get default interrupt handler
+ move.l a0,Handler(a2) use default handler
+
+WakeUp move.w V_WAKE(a2),d0 owner waiting?
+ beq.s Wake90 no... return anyway
+ clr.w V_WAKE(a2) remove pid
+ moveq.l #S$Wake,d1 set signal: S$Wake
+
+SendSig OS9svc F$Send wake up process
+
+Wake90 moveq #0,d1 no error
+ rts
+
+*
+* RecvIrq
+*   the master has received its own echo
+*   of the NETRECV command byte. check the
+*   integrity of the network and immediately
+*   change to sending the message byte
+*
+RecvIrq cmp.b PkCmd(a2),d0 same byte?
+ bne.s ErrorIrq no.. verification failed
+ bsr SetData change to data mode
+ bsr SetUpload change to data upload mode
+ move.b MsgByte(a2),EXARData(a3) send the message byte
+ lea UpIrq(pc),a0 get new handler
+ move.l a0,Handler(a2) install it
+ moveq #0,d1 no error
+ rts
+
+*
+* MakeMsg
+*   make a message byte for inclusion in
+*   a send/receive handshake
+*
+* returns: d0.b = message byte
+*
+*                 bit 7    = 1 if the node can receive a packet
+*                 bits 6:0 = the number of ready bytes 0-127
+*
+MakeMsg move.w OutCount(a2),d0 get current buffer level
+ cmp.w PkSize(a2),d0 will fit into one packet?
+ blo.s MakeMsg1 yes.. return buffer level
+ move.w PkSize(a2),d0 no.. return packet size
+MakeMsg1 move.w d0,PkOut(a2) save announced size
+ move.w #InSize,d1 get input buffer capacity
+ sub.w InCount(a2),d1 subtract used bytes
+ cmp.w PkSize(a2),d1 can we receive one more packet?
+ blo.s MakeMsg2 no.. set no accept flag
+ ori.b #$80,d0 yes.. set accept flag
+MakeMsg2 move.b d0,MsgByte(a2) save the message
+ rts return to caller
+
+ ends

@@ -1,0 +1,792 @@
+ psect alarm_c,0,0,0,0,0
+ nam alarm_c
+ vsect
+sysVars  dc.l 261120
+okvittade_A ds.l 1
+okvittade_B ds.l 1
+okvittade_C ds.l 1
+okvittade_D ds.l 1
+kvittade_A ds.l 1
+kvittade_B ds.l 1
+kvittade_C ds.l 1
+kvittade_D ds.l 1
+glbAlarmMask_A ds.l 1
+glbAlarmMask_B ds.l 1
+glbAlarmMask_C ds.l 1
+glbAlarmMask_D ds.l 1
+alarmLoadCnt ds.l 1
+ ends
+ptr2IntVar link a5,#0
+ movem.l #_1!3,-(sp)
+ move.l #_3,d0 :6
+ bsr _stkcheck
+ subq.l #4,sp :2
+ move.l 4+_2(sp),d1
+ move.l 8(sp),d0
+ bsr metaId
+ move.l d0,(sp) :2
+ ble.s _6
+_5 move.l (sp),d1 :2
+ move.l 8(sp),d0
+ bsr metaType
+ moveq.l #7,d1 :2
+ cmp.l d0,d1 :2
+ bne.s _8
+_7 move.l (sp),-(sp) :2
+ move.l 12(sp),d1
+ move.l 8(sp),d0
+ bsr metaValue
+ addq.l #4,sp :2
+ bra.s _$1
+_6
+_8 moveq.l #0,d0 :2
+_$1 addq.l #4,sp :2
+_4 unlk a5
+ rts :2
+_3 equ 0xffffffb4 :0
+_1 equ 0x00000000 :0
+_2 equ 0x00000010 :0
+_startAlarm: link a5,#0
+ movem.l #_9!3,-(sp)
+ move.l #_11,d0 :6
+ bsr _stkcheck
+ pea _13(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr.s ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,okvittade_A(a6)
+ pea _14(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,okvittade_B(a6)
+ pea _15(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,okvittade_C(a6)
+ pea _16(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,okvittade_D(a6)
+ pea _17(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,kvittade_A(a6)
+ pea _18(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,kvittade_B(a6)
+ pea _19(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,kvittade_C(a6)
+ pea _20(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,kvittade_D(a6)
+ pea _21(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,glbAlarmMask_A(a6)
+ pea _22(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,glbAlarmMask_B(a6)
+ pea _23(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,glbAlarmMask_C(a6)
+ pea _24(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,glbAlarmMask_D(a6)
+ pea _25(pc)
+ move.l 8(sp),d1
+ move.l 4(sp),d0
+ bsr ptr2IntVar
+ addq.l #4,sp :2
+ move.l d0,alarmLoadCnt(a6)
+_12 unlk a5
+ rts :2
+_11 equ 0xffffffb8 :0
+_9 equ 0x00000000 :0
+_10 equ 0x00000010 :0
+_initAlarm: link a5,#0
+ movem.l #_26!3,-(sp)
+ move.l #_28,d0 :6
+ bsr _stkcheck
+ subq.l #4,sp :2
+ clr.l (sp) :2
+ bra.s _32
+_30 move.l (sp),d0 :2
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ clr.b 2(a0,d0.l)
+ move.l (sp),d0 :2
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ clr.b 3(a0,d0.l)
+ move.l (sp),d0 :2
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ vsect
+_101 dc.l 262100
+ ends
+ clr.l 4(a0,d0.l)
+ move.l (sp),d0 :2
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ clr.l 8(a0,d0.l)
+ move.l (sp),d0 :2
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.w #-1,12(a0,d0.l) :6
+ move.l (sp),d0 :2
+ lsl.l #2,d0 :2
+ movea.l 8(sp),a0
+ clr.l 4(a0,d0.l)
+_33 addq.l #1,(sp) :2
+_32 movea.l 4(sp),a0
+ move.w (a0),d0 :2
+ ext.l d0 :2
+ cmp.l (sp),d0 :2
+ bgt.s _30
+_31 movea.l 4(sp),a0
+ movea.w (a0),a0 :2
+ movea.l 8(sp),a1
+ move.l a0,(a1) :2
+ addq.l #4,sp :2
+_29 movem.l -8(a5),#_26
+ unlk a5
+ rts :2
+_28 equ 0xffffffbc :0
+_26 equ 0x00000300 :0
+_27 equ 0x00000018 :0
+_initTimer: link a5,#0
+ movem.l #_34!3,-(sp)
+ move.l #_36,d0 :6
+ bsr _stkcheck
+ subq.l #4,sp :2
+ clr.l (sp) :2
+ bra.s _40
+_38 move.l (sp),d0 :2
+ lsl.l #2,d0 :2
+ movea.l 4(sp),a0
+ clr.l 4(a0,d0.l)
+_41 addq.l #1,(sp) :2
+_40 move.l (sp),d0 :2
+ cmp.l 8(sp),d0
+ blt.s _38
+_39 movea.l 4(sp),a0
+ move.l 8(sp),(a0)
+ addq.l #4,sp :2
+_37 movem.l -4(a5),#_34
+ unlk a5
+ rts :2
+_36 equ 0xffffffbc :0
+_34 equ 0x00000100 :0
+_35 equ 0x00000014 :0
+_markAlarm: link a5,#0
+ movem.l #_42!3,-(sp)
+ move.l #_44,d0 :6
+ bsr _stkcheck
+ subq.l #4,sp :2
+ move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.w 10+_43(sp),12(a0,d0.l) :6
+ move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ cmpi.b #1,2(a0,d0.l) :6
+ beq _46
+_47 moveq.l #0,d0 :2
+ bsr time
+ move.l d0,(sp) :2
+ move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ tst.l 4(a0,d0.l)
+ bne.s _49
+_48 move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.l (sp),4(a0,d0.l)
+_49 move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.l (sp),d1 :2
+ sub.l 4(a0,d0.l),d1
+ cmp.l 4+_43(sp),d1
+ blt.s _51
+_50 tst.l alarmLoadCnt(a6)
+ beq.s _53
+_52 movea.l alarmLoadCnt(a6),a0
+ move.b 3(a0),d0
+ lsl.b #1,d0 :2
+ movea.l sysVars(a6),a0
+ move.b d0,1015(a0)
+_53 move.l 8(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.b #1,2(a0,d0.l) :6
+ moveq.l #1,d0 :2
+ bra.s _$2
+_46
+_51 moveq.l #0,d0 :2
+_$2 addq.l #4,sp :2
+_45 movem.l -4(a5),#_42
+ unlk a5
+ rts :2
+_44 equ 0xffffffb8 :0
+_42 equ 0x00000100 :0
+_43 equ 0x00000014 :0
+_unmarkAlarm: link a5,#0
+ movem.l #_54!3,-(sp)
+ move.l #_56,d0 :6
+ bsr _stkcheck
+ subq.l #4,sp :2
+ move.l 4+_55(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 8(sp),a0
+ clr.b 2(a0,d0.l)
+ move.l 4+_55(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 8(sp),a0
+ tst.l 4(a0,d0.l)
+ bne.s _59
+_58 moveq.l #0,d0 :2
+ bra _$3
+_59 move.l 4+_55(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 8(sp),a0
+ clr.l 4(a0,d0.l)
+ tst.l alarmLoadCnt(a6)
+ beq.s _61
+_60 movea.l alarmLoadCnt(a6),a0
+ move.b 3(a0),d0
+ lsl.b #1,d0 :2
+ neg.b d0 :2
+ movea.l sysVars(a6),a0
+ move.b d0,1015(a0)
+_61 clr.l (sp) :2
+ bra.s _64
+_62 move.l 4+_55(sp),d0
+ moveq.l #12,d1 :2
+ bsr _T$UMul
+ movea.l 8(sp),a0
+ move.l d0,d2 :2
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a1
+ move.l 22(a1,d0.l),d0
+ cmp.l 8(a0,d2.l),d0
+ beq.s _63
+_65
+_67 addq.l #1,(sp) :2
+_64 movea.l 4(sp),a0
+ move.l (sp),d0 :2
+ cmp.l 2(a0),d0
+ blt.s _62
+_66
+_63 movea.l 4(sp),a0
+ move.l (sp),d0 :2
+ cmp.l 2(a0),d0
+ bge _69
+_68 move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ bset.b #2,11(a0,d0.l) :6
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ clr.b 8(a0,d0.l)
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.l d0,d1 :2
+ moveq.l #0,d0 :2
+ bsr time
+ move.l d0,30(a0,d1.l)
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ cmpi.b #2,9(a0,d0.l) :6
+ blt.s _71
+_70 move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.b #1,6(a0,d0.l) :6
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ move.l d0,d2 :2
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a1
+ move.l 30(a0,d2.l),34(a1,d0.l) :6
+ move.l (sp),d0 :2
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 4(sp),a0
+ bset.b #3,11(a0,d0.l) :6
+_71
+_72
+_69 moveq.l #1,d0 :2
+_$3 addq.l #4,sp :2
+_57 movem.l -12(a5),#_54
+ unlk a5
+ rts :2
+_56 equ 0xffffffb8 :0
+_54 equ 0x00000304 :0
+_55 equ 0x0000001c :0
+tobeRemoved link a5,#0
+ movem.l #_73!3,-(sp)
+ move.l #_75,d0 :6
+ bsr _stkcheck
+ movea.l (sp),a0 :2
+ moveq.l #12,d0 :2
+ muls.w 14(a0),d0
+ movea.l 4(sp),a0
+ tst.b 3(a0,d0.l)
+ bne _77
+_78 movea.l (sp),a0 :2
+ btst.b #0,5(a0) :6
+ beq _77
+_80 movea.l (sp),a0 :2
+ tst.b (a0) :2
+ beq _77
+_82 movea.l (sp),a0 :2
+ cmpi.b #1,2(a0) :6
+ beq _77
+_83
+_85 movea.l (sp),a0 :2
+ tst.b 4(a0)
+ beq _86
+_87 movea.l (sp),a0 :2
+ move.b 4(a0),d0
+ movea.l (sp),a0 :2
+ and.b 8(a0),d0
+ movea.l (sp),a0 :2
+ cmp.b 4(a0),d0
+ bne.s _89
+_93 movea.l (sp),a0 :2
+ move.b 4(a0),d0
+ movea.l (sp),a0 :2
+ and.b 9(a0),d0
+ movea.l (sp),a0 :2
+ cmp.b 4(a0),d0
+ bne.s _89
+_92 movea.l (sp),a0 :2
+ move.b 4(a0),d0
+ movea.l (sp),a0 :2
+ and.b 10(a0),d0
+ movea.l (sp),a0 :2
+ cmp.b 4(a0),d0
+ bne.s _89
+_91 movea.l (sp),a0 :2
+ btst.b #4,5(a0) :6
+ beq.s _90
+_94 movea.l (sp),a0 :2
+ move.b 4(a0),d0
+ movea.l (sp),a0 :2
+ and.b 11(a0),d0
+ movea.l (sp),a0 :2
+ cmp.b 4(a0),d0
+ bne.s _89
+_90 movea.l (sp),a0 :2
+ btst.b #5,5(a0) :6
+ beq.s _88
+_95 movea.l (sp),a0 :2
+ move.b 4(a0),d0
+ movea.l (sp),a0 :2
+ and.b 6(a0),d0
+ movea.l (sp),a0 :2
+ cmp.b 4(a0),d0
+ bne.s _89
+_86
+_88 moveq.l #1,d0 :2
+ bra.s _76
+_77
+_79
+_81
+_84
+_89 moveq.l #0,d0 :2
+_76
+_96 movem.l -4(a5),#_73
+ unlk a5
+ rts :2
+_75 equ 0xffffffc0 :0
+_73 equ 0x00000100 :0
+_74 equ 0x00000014 :0
+_packAlarms: link a5,#0
+ movem.l #_97!3,-(sp)
+ move.l #_99,d0 :6
+ bsr _stkcheck
+ lea -48(sp),sp
+ bsr get_batt_voltage
+ movea.l _101(a6),a0
+ move.w d0,(a0) :2
+ bsr _decrementList
+ clr.l 40(sp)
+ tst.l glbAlarmMask_A(a6)
+ bne _102
+_106 tst.l glbAlarmMask_B(a6)
+ bne _102
+_105 tst.l glbAlarmMask_C(a6)
+ bne _102
+_104 tst.l glbAlarmMask_C(a6)
+ beq _103
+ bra _108
+_109 move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ btst.b #0,11(a0,d0.l) :6
+ bne _111
+_110 subq.l #4,sp :2
+ move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ tst.b 9(a0,d0.l)
+ bne.s _113
+_112 movea.l glbAlarmMask_A(a6),a0
+ bra.s _$4
+_113 move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ cmpi.b #1,9(a0,d0.l) :6
+ bne.s _116
+_115 movea.l glbAlarmMask_B(a6),a0
+ bra.s _$4
+_116 move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ cmpi.b #2,9(a0,d0.l) :6
+ bne.s _119
+_118 movea.l glbAlarmMask_C(a6),a0
+ bra.s _$4
+_119 move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ cmpi.b #3,9(a0,d0.l) :6
+ bne.s _122
+_121 movea.l glbAlarmMask_D(a6),a0
+_$4 move.l (a0),(sp) :2
+_114
+_117
+_120
+_122 move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ move.b 3(sp),10(a0,d0.l) :6
+ move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 52(sp),a0
+ bset.b #0,11(a0,d0.l) :6
+ addq.l #4,sp :2
+_111 addq.l #1,40(sp)
+_102
+_108 movea.l 48(sp),a0
+ move.l 40(sp),d0
+ cmp.l 2(a0),d0
+ blt _109
+_103
+_107 moveq.l #0,d0 :2
+ move.l d0,40(sp)
+ move.l d0,44(sp)
+ bra _124
+_125 move.l 52(sp),d1
+ move.l d1,d2 :2
+ move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ move.l 48(sp),d1
+ addq.l #6,d1 :2
+ add.l d1,d0 :2
+ move.l d2,d1 :2
+ bsr tobeRemoved
+ tst.l d0 :2
+ beq _127
+_126 move.l 52(sp),d1
+ move.l d1,d2 :2
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ move.l 48(sp),d1
+ addq.l #6,d1 :2
+ add.l d1,d0 :2
+ move.l d2,d1 :2
+ bsr tobeRemoved
+ tst.l d0 :2
+ bne.s _129
+_128 pea 112.w
+ move.l 44(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ move.l 52(sp),d1
+ addq.l #6,d1 :2
+ add.l d1,d0 :2
+ move.l d0,d1 :2
+ move.l d1,d2 :2
+ move.l 48(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ move.l 52(sp),d1
+ addq.l #6,d1 :2
+ add.l d1,d0 :2
+ move.l d2,d1 :2
+ bsr memcpy
+ addq.l #4,sp :2
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ clr.b 10(a0,d0.l)
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ move.b #1,6(a0,d0.l) :6
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ clr.b 8(a0,d0.l)
+_127 addq.l #1,44(sp)
+_129
+_130 addq.l #1,40(sp)
+_124 movea.l 48(sp),a0
+ move.l 40(sp),d0
+ cmp.l 2(a0),d0
+ blt _125
+_123 movea.l 48(sp),a0
+ move.l 44(sp),2(a0) :6
+ clr.l 40(sp)
+ moveq.l #0,d0 :2
+ move.l d0,32(sp)
+ move.l d0,36(sp)
+ moveq.l #0,d0 :2
+ move.l d0,28(sp)
+ move.l d0,24(sp)
+ move.l d0,20(sp)
+ move.l d0,16(sp)
+ moveq.l #0,d0 :2
+ move.l d0,12(sp)
+ move.l d0,8(sp)
+ move.l d0,4(sp)
+ move.l d0,(sp) :2
+ bra _132
+_133 move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ tst.b 6(a0,d0.l)
+ bne.s _134
+_135 moveq.l #1,d0 :2
+ bra.s _136
+_134 moveq.l #0,d0 :2
+_136 add.l d0,36(sp)
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ move.b 8(a0,d0.l),d0
+ ext.w d0 :2
+ ext.l d0 :2
+ add.l d0,32(sp)
+ move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ tst.b 6(a0,d0.l)
+ bne.s _138
+_137 move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ move.b 9(a0,d0.l),d0
+ ext.w d0 :2
+ andi.w #3,d0
+ ext.l d0 :2
+ lsl.l #2,d0 :2
+ lea 16(sp),a0
+ bra.s _$5
+_138 move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ tst.b 8(a0,d0.l)
+ beq.s _141
+_140 move.l 40(sp),d0
+ moveq.l #112,d1 :2
+ bsr _T$UMul
+ movea.l 48(sp),a0
+ move.b 9(a0,d0.l),d0
+ ext.w d0 :2
+ andi.w #3,d0
+ ext.l d0 :2
+ lsl.l #2,d0 :2
+ lea (sp),a0 :2
+_$5 addq.l #1,0(a0,d0.l)
+_139
+_141 addq.l #1,40(sp)
+_132 movea.l 48(sp),a0
+ move.l 40(sp),d0
+ cmp.l 2(a0),d0
+ blt _133
+_131 movea.l 48(sp),a0
+ move.w (a0),d0 :2
+ ext.l d0 :2
+ movea.l 48(sp),a0
+ cmp.l 2(a0),d0
+ ble.s _143
+_142 movea.l sysVars(a6),a0
+ move.b 992(a0),d0
+ ext.w d0 :2
+ btst.l #1,d0
+ beq.s _145
+_144 movea.l sysVars(a6),a0
+ andi.b #-3,992(a0) :6
+_145 movea.l sysVars(a6),a0
+ bset.b #1,993(a0) :6
+ bra.s _146
+_143 movea.l sysVars(a6),a0
+ move.b 992(a0),d0
+ ext.w d0 :2
+ btst.l #1,d0
+ bne.s _148
+_147 movea.l sysVars(a6),a0
+ bset.b #1,992(a0) :6
+_146
+_148 tst.l 36(sp)
+ beq.s _150
+_149 movea.l sysVars(a6),a0
+ move.b 992(a0),d0
+ ext.w d0 :2
+ btst.l #0,d0
+ bne.s _152
+_151 movea.l sysVars(a6),a0
+ bset.b #0,992(a0) :6
+ bra.s _153
+_150 tst.l 32(sp)
+ beq.s _155
+_154 movea.l sysVars(a6),a0
+ move.b 992(a0),d0
+ ext.w d0 :2
+ btst.l #0,d0
+ beq.s _157
+_156 movea.l sysVars(a6),a0
+ andi.b #-2,992(a0) :6
+_157 movea.l sysVars(a6),a0
+ bset.b #0,993(a0) :6
+ bra.s _158
+_155 movea.l sysVars(a6),a0
+ andi.b #-2,992(a0) :6
+ movea.l sysVars(a6),a0
+ andi.b #-2,993(a0) :6
+_152
+_153
+_158 tst.l okvittade_A(a6)
+ beq.s _160
+_159 movea.l okvittade_A(a6),a0
+ move.l 16(sp),(a0)
+_160 tst.l okvittade_B(a6)
+ beq.s _162
+_161 movea.l okvittade_B(a6),a0
+ move.l 20(sp),(a0)
+_162 tst.l okvittade_C(a6)
+ beq.s _164
+_163 movea.l okvittade_C(a6),a0
+ move.l 24(sp),(a0)
+_164 tst.l okvittade_D(a6)
+ beq.s _166
+_165 movea.l okvittade_D(a6),a0
+ move.l 28(sp),(a0)
+_166 tst.l kvittade_A(a6)
+ beq.s _168
+_167 movea.l kvittade_A(a6),a0
+ move.l (sp),(a0) :2
+_168 tst.l kvittade_B(a6)
+ beq.s _170
+_169 movea.l kvittade_B(a6),a0
+ move.l 4(sp),(a0)
+_170 tst.l kvittade_C(a6)
+ beq.s _172
+_171 movea.l kvittade_C(a6),a0
+ move.l 8(sp),(a0)
+_172 tst.l kvittade_D(a6)
+ beq.s _174
+_173 movea.l kvittade_D(a6),a0
+ move.l 12(sp),(a0)
+_174 lea 48(sp),sp
+_100 movem.l -8(a5),#_97
+ unlk a5
+ rts :2
+_99 equ 0xffffff88 :0
+_97 equ 0x00000104 :0
+_98 equ 0x00000018 :0
+_13 dc.b "noOfNak_A",$0
+_14 dc.b "noOfNak_B",$0
+_15 dc.b "noOfNak_C",$0
+_16 dc.b "noOfNak_D",$0
+_17 dc.b "noOfAck_A",$0
+_18 dc.b "noOfAck_B",$0
+_19 dc.b "noOfAck_C",$0
+_20 dc.b "noOfAck_D",$0
+_21 dc.b "globalAlarmMask_A",$0
+_22 dc.b "globalAlarmMask_B",$0
+_23 dc.b "globalAlarmMask_C",$0
+_24 dc.b "globalAlarmMask_D",$0
+_25 dc.b "alarmLoadCnt",$0
+ ends

@@ -1,0 +1,6 @@
+Copyright 1991-1993 IVT Electronic AB
+SENDVAR Version 1.00
+ Communication port COM1
+ BAUD rate is 9600    No parity    Eight data bits    One stop bit(s)
+ CTS is not required.
+0 1 2
